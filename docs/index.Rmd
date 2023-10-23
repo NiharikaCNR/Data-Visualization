@@ -192,7 +192,7 @@ __Encode the data in x using the x-coordinate positions of 10 circles. Animate t
 
 `random_pt_transitions.html`
 ```{html, eval=F}
-"<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang='en' dir='ltr'>
   <head>
     <script src='https://d3js.org/d3.v7.min.js'></script>
@@ -218,7 +218,6 @@ __Encode the data in x using the x-coordinate positions of 10 circles. Animate t
   </body>
     <script src='bar-transitions.js'></script>
 </html>
-"
 ```
 
 `random_pt_transitions.js`
@@ -298,7 +297,7 @@ __This problem continues [Simple Bar Chart] above. We will create a bar chart th
 
 `bar-transitions.html`
 ```{html, eval=F}
-'<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" dir="ltr">
   <head>
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -323,7 +322,7 @@ __This problem continues [Simple Bar Chart] above. We will create a bar chart th
     </div>
   </body>
     <script src="bar-transitions.js"></script>
-</html>'
+</html>
 ```
 
 `bar-transitions.js`

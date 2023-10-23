@@ -259,7 +259,7 @@ animate()
 
 ### Output:
 <video width="100%"  autoplay loop>
-  <source src="./Problem-Set-2_files/PS2_Random_Transitions_1.mp4" type="video/mp4">
+  <source src="https://github.com/NiharikaCNR/stat679-ps2/blob/main/docs/Problem-Set-2_files/PS2_Random_Transitions_1.mp4" type="video/mp4">
 </video>
 
 ## Part (c)
@@ -288,7 +288,7 @@ animate(0)
 
 ### Output:
 <video width="100%" autoplay loop>
-  <source src="./Problem-Set-2_files/PS2_Random_Transitions_2.mp4" type="video/mp4">
+  <source src="https://github.com/NiharikaCNR/stat679-ps2/blob/main/docs/Problem-Set-2_files/PS2_Random_Transitions_2.mp4" type="video/mp4">
 </video>
 
 
@@ -395,7 +395,7 @@ document.getElementById("btn-transition").addEventListener("click", move_bars);
 
 ### Output:
 <video width="100%" autoplay loop>
-  <source src="./Problem-Set-2_files/PS2_Bar_Transitions.mp4" type="video/mp4">
+  <source src="https://github.com/NiharikaCNR/stat679-ps2/blob/main/docs/Problem-Set-2_files/PS2_Bar_Transitions.mp4" type="video/mp4">
 </video>
 
 

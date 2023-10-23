@@ -9,6 +9,7 @@ date: "`r Sys.Date()`"
 ---
 
 ```{r setup, include=FALSE}
+# https://niharikacnr.github.io/stat679-ps2/
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, cache = TRUE)
 library(bslib)
 library(ceramic)
@@ -18,7 +19,6 @@ library(shiny)
 library(tidyverse)
 library(terra)
 library(tmap)
-library(vembedr)
 library(ggplot2)
 
 theme_ps2 <- theme_classic() +
@@ -105,19 +105,22 @@ plants <- read_sf("https://raw.githubusercontent.com/krisrs1128/stat992_f23/main
 
 basemap <- cc_location(loc= c(-89.63490, 42.90875), buffer = 10e5)
 
-# tm_shape(basemap) +
-#   tm_rgb(1,1,1) +
+tm_shape(basemap) +
+  tm_rgb() +
   tm_shape(plants) + 
   tm_dots(
     size='capacity_mw',
     col='primary_fuel',
+    alpha = 0.7,
     palette="Set2",
     title = "Fuel Type",
-    title.size = "Capacity (in MW)"
+    title.size = "Capacity (in MW)", 
+    scale=2
     ) +
   tm_layout(
     legend.outside = T,
-    legend.outside.position = "right"
+    legend.outside.position = "right",
+    main.title = "  Power plants in the Mid-west",
     )
 ```
 
@@ -126,15 +129,22 @@ basemap <- cc_location(loc= c(-89.63490, 42.90875), buffer = 10e5)
 update_map <- function(df, selected_) {
   selected_data <- df %>% filter(selected_)
   tm_shape(basemap) +
-    tm_rgb(3,2,1,1,0.25) +
+    tm_rgb() +
     tm_shape(selected_data) + 
     tm_dots(
-      size='log_capacity', 
-      col='primary_fuel', 
+      size='capacity_mw',
+      col='primary_fuel',
+      alpha = 0.7,
       palette="Set2",
-      legend.show = F, 
-      legend.size.show = F
-      )
+      title = "Fuel Type",
+      title.size = "Capacity (in MW)", 
+      legend.show = F,
+      scale=2
+    ) +
+    tm_layout(
+      legend.outside = T,
+      legend.outside.position = "left",
+    )
 }
 
 update_histogram <- function(df, selected_) {
@@ -157,8 +167,8 @@ ui <- fluidPage(
   h3("Mid-Western Power Plants"),
   fluidRow(
     column(6,
-      h4("Brush over the plot to interact with the map"),
-      plotOutput("stacked_histogram", brush = brushOpts("plot_brush", direction = "x"))
+           h4("Brush over the plot to interact with the map"),
+           plotOutput("stacked_histogram", brush = brushOpts("plot_brush", direction = "x"))
     ),
     column(6, plotOutput("map", height = 600)),
   ),
@@ -173,11 +183,15 @@ server <- function(input, output) {
   
   output$stacked_histogram <- renderPlot(update_histogram(plants, selected()))
   output$map <- renderPlot(update_map(plants, selected()))
-  # output$table <- renderDataTable(filter_df(rentals, selected()))
 }
 
 # shinyApp(ui, server)
 ```
+
+### Output:
+<video width="100%"  muted autoplay loop>
+  <source src="./Problem-Set-2_files/Midwestern-PowerPlants.mp4" type="video/mp4">
+</video>
 
 ## Part (c)
 __Describe one strength and one limitation of the visualization generated in part (b). Consider one visual query for which it is poorly suited, and discuss (but do not implement) and alternative.__
@@ -193,11 +207,11 @@ __Encode the data in x using the x-coordinate positions of 10 circles. Animate t
 `random_pt_transitions.html`
 ```{html, eval=F}
 <!DOCTYPE html>
-<html lang='en' dir='ltr'>
+<html lang="en" dir="ltr">
   <head>
-    <script src='https://d3js.org/d3.v7.min.js'></script>
-    <script src='https://d3js.org/d3-selection-multi.v1.min.js'></script>
-    <meta charset='utf-8'>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
+    <meta charset="utf-8">
     <title></title>
     <style >
         div { padding: 30%; }
@@ -379,6 +393,83 @@ move_bars()
 <video width="100%" muted autoplay loop>
   <source src="https://github.com/NiharikaCNR/stat679-ps2/blob/main/docs/Problem-Set-2_files/PS2_Bar_Transitions.mp4" type="video/mp4">
 </video>
+
+
+# Q5. Transition Taxonomy
+## Part (a)
+__Pick any visualization from the New York Times Upshot, Washington Post Visual Stories, the BBC Interactives and Graphics, or the Guardian Interactives pages. Describe two transitions that it implements. Of the 7 transition types given above, which is each one most similar to? Explain your choice.__
+
+I picked the below projectile plot from [this](https://www.theguardian.com/us-news/ng-interactive/2017/dec/20/bussed-out-america-moves-homeless-people-country-study) Guardian article.
+
+I believe it is an example of _View Transformation_. Here, the plot first shows the people flown from NYC to foreign countries. Then, plot then zooms in and then proceeds to show the people flown from NYC to US mainland destinations. I think it is a View Transformation because we are zooming in to show a specific region of the plot.
+
+<center>
+  <video width="60%" muted autoplay loop>
+    <source src="https://github.com/NiharikaCNR/stat679-ps2/blob/main/docs/Problem-Set-2_files/Transition_Taxonomy_Example.mp4" type="video/mp4">
+  </video>
+</center>
+
+## Part (b)
+__For any transition (which may or may not be one of those you chose in (a)), identify the types of graphical marks used to represent the data. How would you create this type of mark in SVG?__
+
+The graphical elements I can spot in this plot are:
+
+1. Circles
+2. Lines/Curves
+
+I can recreate the circle elements using the `<circle>` element of `<svg>`. I have not worked on lines before but I learned from the lecture nortes that we can draw lines as `<path>` elements in `<svg>`.
+
+
+## Part (c)
+__To achieve the transition effect, how do you expect that the SVG elements would be modified / added / removed? Specifically, if elements are modified, what SVG attrs would be changed, and if elements are added or removed, how would the enter-exit-update pattern apply? You do not need to look at the code implementing the actual visualization, but you should give a plausible description of how the transition could be implemented in D3.__
+
++ Here, when new elements enter into the graphic, we add a path element to them and also a circle element to them. The path curve will have a distance attribute and a curvature attribute to it. The circle element would have a radius attribute to it. 
++ When the view is updated, firstly, the current view is grayed out, and then the newly added data elements are given the blue color with the same path and circle elements
++ The old view elements exit from the active visualisation if it's distance attribute is larger than the maximum supported distance value on the screen currently (due to the zooming in). The elements whose distance is larger than this maimum distance are then removed.
+
+
+# Q6. Icelandic Population Analysis
+## Part (a)
+__Explain how to read this visualization. What are two potential insights a reader could take away from this visualization?__
+
++ This visualization shows the populations of men and women by age in Iceland in the time period 1841-2019. 
++ The red bars represent the female population (in thousands) of a certain age in a given year, and the blue bars represent the same for male population.
++ The bars keep moving as the years progress to show the incresing age of the same male and females as time passes
++ The peeking red/blue bars represent the difference in the populations across the genders. For example, for the year 1841, there is a red bar peeking out behind the grey bar for the age 8. This means that there were approximately 800 more 8 y/o females than males in Iceland in 1841.
+
+_Insights:_
+
++ One major insight a reader can get from this visualization is the gender ratio in Iceland at any given time. The peeking coloured bars help with identifying that easily. 
++ Another derived insight could also be the life expectancy trend in the Icelandic popultion across genders as years pass. 
+
+## Part (b)
+__The implementation uses the following data join. What does this code do? What purpose does it serve within the larger visualization?__
+
+```
+rect = rect
+.data(data.filter(d => d.year === year), d => `${d.sex}:${d.year - d.age})
+```
+
++ The `.data()` binds the dataset to the SVG `rect` element
++ The first argument of the `.data()` call -- `data.filter(d => d.year === year)` -- will filter the rows of the particular year from the data set
++ The second argument of the `.data()` call -- `d => ${d.sex}:${d.year - d.age}` -- assigns a unique `key` to each `rect` element. Here, the key is a combination of the `sex` of the person and the difference between the `year` and their `age`.
+
+Overall, this code updates the visualization, based on a filtered subset of `data` for a specific `year.` The `key` ensures that the data points are correctly matched between the old and new data sets, to avoid re-rendering any element.
+
+## Part (c)
+__When the bars are entered at Age = 0, they seem to “pop up,” rather than simply being appended to the end of the bar chart. How is this effect implemented?__
+
+I believe this is due to the D3 `transition()` effects added to the bars to bring them to the desired height at `enter`, instead of just displaying them without any animate motion. 
+
+## Part (d)
+__Suppose that you had comparable population-by-age data for two countries. What queries would be interesting to support? How would you generalize the current visualization’s design to support those queries?__
+
++ I would be interested to see the difference in the populations of the two countries across years. I would modify the gender grouping in the current visualization to replace it with a country-wise grouping. 
++ I would also like to see a label on the gender ratio in each country across the ages. I would introduce two small labels above each bar to show the value, colour-coded by country.
+
+<center>
+  <img style="width:50%" src="https://github.com/NiharikaCNR/stat679-ps2/blob/main/docs/Problem-Set-2_files/gender_ratio_comparison.png"/>
+</center>
 
 
 

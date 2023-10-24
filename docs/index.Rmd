@@ -332,7 +332,7 @@ __This problem continues [Simple Bar Chart] above. We will create a bar chart th
   <body>
     <div>
         <svg></svg>
-        <button id="btn-transition">Click me to move the bars!</button>
+        <button id="btn-transition" onclick="move_bars()">Click me to move the bars!</button>
     </div>
   </body>
     <script src="bar-transitions.js"></script>

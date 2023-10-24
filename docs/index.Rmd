@@ -281,7 +281,7 @@ __Extend your animation so that at least one other attribute is changed at each 
 
 Here, I made the radii of the circles increase gradually along with their x-coordinates
 
-`random_pt_transitions.js`
+Updated `animate()` in `random_pt_transitions.js`
 ```{js, eval=F}
 function animate(t) {
   circle_data = circle_data.map(cd => { return { x: generator(), r: cd.r, rnew: (1 + Math.sin(t/10)) * cd.r } });
@@ -366,23 +366,16 @@ function move_bars() {
       .join (
         enter => enter.append("rect").transition(500)
                       .attrs({
-                        height: 0,
-                        width: 50,
-                        x: 0,
-                        y: 500,
+                        height: 0, width: 50,
+                        x: 0, y: 500, opacity: 0.75
                         fill: bd => assign_fill(bd.id),
-                        opacity: 0.75
                       }),
         update => update.transition(500)
                         .attrs({
-                            x: bd => (bd.life-1)*55,
-                            y: bd => 500 - bd.height,
-                            height: bd => bd.height,
-                            width: 50
+                            x: bd => (bd.life-1)*55, y: bd => 500 - bd.height,
+                            height: bd => bd.height, width: 50
                         }),
-        exit => exit.transition(500)
-                    .attrs({y: 500})
-                    .remove()
+        exit => exit.transition(500).attrs({y: 500}).remove()
       )
 }
 
@@ -459,7 +452,7 @@ Overall, this code updates the visualization, based on a filtered subset of `dat
 ## Part (c)
 __When the bars are entered at Age = 0, they seem to “pop up,” rather than simply being appended to the end of the bar chart. How is this effect implemented?__
 
-I believe this is due to the D3 `transition()` effects added to the bars to bring them to the desired height at `enter`, instead of just displaying them without any animate motion. 
+I believe this is due to the D3 `transition()` effects added to the z bars to bring them to the desired height at `enter`, instead of just displaying them without any animate motion. 
 
 ## Part (d)
 __Suppose that you had comparable population-by-age data for two countries. What queries would be interesting to support? How would you generalize the current visualization’s design to support those queries?__

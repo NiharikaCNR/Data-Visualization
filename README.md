@@ -1,9 +1,9 @@
 # STAT679 - Problem Set 2 - Niharika Chunduru
 
-Hosted website: https://niharikacnr.github.io/stat679-ps2
+Hosted website: [click here](https://niharikacnr.github.io/Data-Visualization/ps2.html)
 
 + Code files are in `/docs`.
-+ All dependent output images and screen recordings are in `/docs/Problem-Set-2_files`
++ All dependent output images and screen recordings are in `/docs/media`
 
 ## Types of Visualizations:
 1. Time Series Visualization (Step Plot and Horizon Plot) using R

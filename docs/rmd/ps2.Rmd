@@ -3,9 +3,7 @@ title: 'STAT 679: Problem Set #2'
 author: "Niharika Chunduru"
 output: rmdformats::readthedown
 css: ../styles/ps2.css
-date: "`r Sys.Date()`"
-# output: pdf_document
-# geometry: margin=0.5in
+# date: "`r Sys.Date()`"
 ---
 
 ```{r setup, include=FALSE}
@@ -51,7 +49,7 @@ __Make a plot of `prop_smooth` over time for each activity. Justify your choice 
 
 In the below visualization, I have encoded the activities in the color encoding of the line plot. 
 
-```{r, fig.width=15, fig.height=15}
+```{r america-time-use-diff-plot, fig.width=15, fig.height=15}
 activities <- read.csv("https://raw.githubusercontent.com/krisrs1128/stat992_f23/main/exercises/ps2/activity.csv") %>% 
   group_by(activity) %>% 
   mutate(
@@ -82,7 +80,7 @@ __Create an alternative visualization using a different encoding. For example, y
 
 I chose to make a Horizon Plot for the given data. Fortunately the visualizations from both (b) and (c) help answer all the questions I stated in part-(a). But the horizon plot has an additional advantage of utilizing the full plot area so it is easier to interpret.
 
-```{r, fig.width=15, fig.height=15}
+```{r america-time-use-horizon-plot, fig.width=15, fig.height=15}
 cutpoints <- seq(0,100,by=10)
 ggplot(activities) + 
   geom_horizon(aes(time, ps_percentage, fill = after_stat(Cutpoints)), origin = 50, horizonscale = cutpoints) + 
@@ -99,7 +97,7 @@ ggplot(activities) +
 # Q2. Midwestern Power Plants
 ## Part (a)
 __Create a map of power plants that shows where plants are located, how they generate electricity (`primary_fuel`), and how much generation capacity they have (`capacity_mw`).__
-```{r}
+```{r midwestern-power-plants-static-map, fig.width=8, fig.height=8}
 plants <- read_sf("https://raw.githubusercontent.com/krisrs1128/stat992_f23/main/exercises/ps2/power_plants.geojson")
 
 basemap <- cc_location(loc= c(-89.63490, 42.90875), buffer = 10e5)
@@ -124,7 +122,7 @@ tm_shape(basemap) +
 ```
 
 ## Part (b)
-```{r}
+```{r midwestern-power-plants-shiny-app}
 update_map <- function(df, selected_) {
   selected_data <- df %>% filter(selected_)
   tm_shape(basemap) +
@@ -187,10 +185,12 @@ server <- function(input, output) {
 # shinyApp(ui, server)
 ```
 
-### Output:
-<video width="100%" muted autoplay loop>
-  <source src="https://github.com/NiharikaCNR/stat679-ps2/raw/main/docs/Problem-Set-2_files/Midwestern-PowerPlants.mp4" type="video/mp4">
-</video>
+### Video of Output:
+<center>
+  <video width="100%" muted autoplay loop>
+    <source src="https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/media/Midwestern-PowerPlants.mp4" type="video/mp4">
+  </video>
+</center>
 
 ## Part (c)
 __Describe one strength and one limitation of the visualization generated in part (b). Consider one visual query for which it is poorly suited, and discuss (but do not implement) and alternative.__
@@ -270,10 +270,12 @@ function animate() {
 animate()
 ```
 
-### Output:
-<video width="100%" muted autoplay loop>
-  <source src="https://github.com/NiharikaCNR/stat679-ps2/blob/main/docs/Problem-Set-2_files/PS2_Random_Transitions_1.mp4" type="video/mp4">
-</video>
+### Video of Output:
+<center>
+  <video width="100%" muted autoplay loop>
+    <source src="https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/media/PS2_Random_Transitions_1.mp4" type="video/mp4">
+  </video>
+</center>
 
 ## Part (c)
 __Extend your animation so that at least one other attribute is changed at each time step. For example, you may consider changing the color or the size of the circles. Make sure that transitions remain smooth (e.g., if transitioning size, gradually increase or decrease the circles’ radii).__
@@ -299,10 +301,12 @@ function animate(t) {
 animate(0)
 ```
 
-### Output:
-<video width="100%" muted autoplay loop>
-  <source src="https://github.com/NiharikaCNR/stat679-ps2/blob/main/docs/Problem-Set-2_files/PS2_Random_Transitions_2.mp4" type="video/mp4">
-</video>
+### Video of Output:
+<center>
+  <video width="100%" muted autoplay loop>
+    <source src="https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/media/PS2_Random_Transitions_2.mp4" type="video/mp4">
+  </video>
+</center>
 
 
 # Q4. Bar Chart Transitions
@@ -381,11 +385,12 @@ function move_bars() {
 move_bars()
 ```
 
-### Output:
-<video width="100%" muted autoplay loop>
-  <source src="https://github.com/NiharikaCNR/stat679-ps2/blob/main/docs/Problem-Set-2_files/PS2_Bar_Transitions.mp4" type="video/mp4">
-</video>
-
+### Video of Output:
+<center>
+  <video width="100%" muted autoplay loop>
+    <source src="https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/media/PS2_Bar_Transitions.mp4" type="video/mp4">
+  </video>
+</center>
 
 # Q5. Transition Taxonomy
 ## Part (a)
@@ -397,7 +402,7 @@ I believe it is an example of _View Transformation_. Here, the plot first shows 
 
 <center>
   <video width="60%" muted autoplay loop>
-    <source src="https://github.com/NiharikaCNR/stat679-ps2/blob/main/docs/Problem-Set-2_files/Transition_Taxonomy_Example.mp4" type="video/mp4">
+    <source src="https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/media/Transition_Taxonomy_Example.mp4" type="video/mp4">
   </video>
 </center>
 
@@ -462,7 +467,7 @@ __Suppose that you had comparable population-by-age data for two countries. What
 + I would also like to see a label on the gender ratio in each country across the ages. I would introduce two small labels above each bar to show the value, colour-coded by country.
 
 <center>
-  <img style="width:50%" src="https://github.com/NiharikaCNR/stat679-ps2/blob/main/docs/Problem-Set-2_files/gender_ratio_comparison.png"/>
+  <img style="width:50%" src="https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/media/gender_ratio_comparison.png"/>
 </center>
 
 

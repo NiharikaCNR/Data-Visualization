@@ -1,0 +1,425 @@
+---
+title: "STAT-679: Problem Set #1"
+author: "Niharika Chunduru"
+output: rmdformats::readthedown
+css: ../styles/ps1.css
+# date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, cache = TRUE)
+library(tidyverse)
+library(shiny)
+```
+
+
+# Q1. Coffee Ratings
+## Part (a)
+__Clean the `harvest_year` column. Specifically, if a year of the form `20XX` appears in the name, keep it in a new column. For example, `23 July 2010` and `Abril - Julio /2011` should be converted into `2010` and `2011`, respectively. Remove years that appear less than 10 times.__
+
+Steps followed:
+
+1. Extracted the years starting with "20" from the harvest_year column
+2. Eliminated rows with __na__ values
+3. Removed the years that appear less than 10 times
+```{r coffee a}
+coffee = read_csv("coffee_ratings.csv")
+
+coffee$harvest_year = str_extract(coffee$harvest_year, "20[0-9][0-9]")
+
+coffee = coffee[complete.cases(coffee$harvest_year), ]
+
+harvest_year_freq = coffee %>% 
+  group_by(harvest_year) %>%
+  summarize(freq = n())
+
+coffee = coffee %>% 
+  filter(harvest_year %in% harvest_year_freq$harvest_year[harvest_year_freq$freq>=10])
+```
+
+## Part (b)
+__Create a layered visualization of aroma against the year variable defined in (a).__
+```{r coffee b, warning=F}
+ggplot(coffee) + 
+  geom_jitter(
+    aes(as.factor(harvest_year), aroma, color=species),
+    alpha = 0.1,
+    ) +
+  geom_boxplot(
+    aes(as.factor(harvest_year), aroma, color=species, fill=species), 
+    alpha = 0.3, 
+    # color = "peachpuff4",
+    # fill="salmon4"
+    ) + 
+  scale_y_continuous(limits = c(6, max(coffee$aroma))) + 
+  scale_color_manual(values = c("salmon4", "black")) + 
+  scale_fill_manual(values = c("salmon4", "black")) + 
+  theme_light() + 
+  labs(
+    title = "Coffee Aroma every Harvest Year across species",
+    x = "Harvest Year", 
+    y = "Aroma", 
+    color = "Coffee Species", 
+    fill="Coffee Species"
+    ) + 
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.ticks = element_blank(), 
+    legend.position = "top")
+```
+
+## Part (c) 
+__Develop a new question related to these data. Make sure that it refers to 3 or more variables. Provide a visualization that answers your question.__
+
+_Question: What is the trend on the the average points awarded to the top 10 varieties of coffee across the years harvested?_
+
+```{r}
+top_varieties <- (coffee %>% 
+  group_by(variety) %>% 
+  summarise(avg_pts = mean(total_cup_points)) %>% 
+  arrange(-avg_pts))$variety[1:10]
+
+coffee_varieties <- coffee %>% 
+  select(variety, total_cup_points, harvest_year) %>% 
+  na.omit() %>% 
+  filter(variety %in% top_varieties) %>% 
+  group_by(variety,harvest_year) %>% 
+  summarize(avg_pts = mean(total_cup_points))
+
+ggplot(coffee_varieties) + 
+  geom_point(aes(as.numeric(harvest_year), avg_pts, color = reorder(variety, -avg_pts))) +
+  geom_line(aes(as.numeric(harvest_year), avg_pts, color = variety)) + 
+  labs(
+    title = "Coffee points of top 10 coffee varieties",
+    x = "Harvest Year", 
+    y = "Average Coffee Points", 
+    color = "Coffee Varieties"
+  ) + 
+  scale_color_brewer(palette = "Paired") +
+  theme_light() + 
+  theme(
+    legend.position = "bottom", 
+    plot.title = element_text(hjust = 0.5))
+```
+
+## Part (d)
+__Study a public analysis of the same dataset. For example, you can skim David Robinson’s screencast or Benjamin Smith’s blog, but don’t feel constrained to these two. Comment on either (i) one code technique you learned from the example or (ii) the visual design strengths/weaknesses of one figure.__
+
+![Coffee_Image](coffee-img-2.png)
+I would like to comment on the above visualization from Benjamin Smith's blog.
+
++ The visualization answers quite a decent question of showing how active a country is in the coffee trade.
++ Using a bar plot makes it easy to draw comparisons across countries as the viewer would only have to see the lengths of the bars to compare
++ Sorting the bars in decreasing order of listings adds a new level of information to the viewer without have to put in much efforts of adding a plot dimension. 
++ A minor but pleasing detail is the choice of brown color for the bars. A viewer would like to see colors to the topic in discussion
++ I thing I would have liked the plot to reflect is the listings of the countries across the years. This could have been implemented by splitting the bar by color based on what `harvest_year` they were listed in. This plot could be showing me that Mexico is the most listed country, but I do not know if it was equally listed over the years, or if it was only listed in one particular year, say 2012.
+
+
+# Q2. NCAA Trends
+## Part (a)
+__Derive new columns representing (i) the cumulative total number of points over time for each school (ii) the cumulative total number of points over time for a hypothetical team that earns 35 points a year.__
+```{r ncaa a}
+ncaa <- read_csv("https://raw.githubusercontent.com/krisrs1128/stat992_f23/main/exercises/ps1/ncaa_filtered.csv")
+
+ncaa = ncaa %>% 
+  mutate(hypo_team_points = 35) %>%
+  group_by(school) %>% 
+  mutate(cumulative_points = cumsum(points), hypo_cumulative_points = cumsum(hypo_team_points)) %>% 
+  select(-hypo_team_points)
+```
+
+
+## Part (b)
+__Create a visualization that shows the running total number of points for each school over time. If you use faceting, ensure that facets are sorted in an informative way.__
+```{r ncaa b, fig.height=12, fig.width=10}
+ggplot(ncaa) + 
+  geom_line(aes(year, cumulative_points), alpha=0.7) + 
+  facet_wrap(~ reorder(school,cumulative_points, decreasing=T),ncol=4) + 
+  ggtitle("Comparative visualization to show the running total points for each school over time") +
+  xlab("Year") + 
+  ylab("Running total points") +
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'), 
+        axis.text = element_text(size = 5.5), 
+        axis.title = element_text(size=15))
+```
+
+## Part (c)
+__Design a visualization that that compares each school’s performance with that of the hypothetical team that averages 35 points per year. See the figure below for an example approach. Explain the strengths and weaknesses of your design and comment on a finding from your visualization.__
+```{r ncaa c}
+ggplot(ncaa) + 
+  geom_line(
+    aes(year, cumulative_points, color=reorder(school,cumulative_points, decreasing=T)), 
+    alpha=0.6) + 
+  geom_line(aes(year, hypo_cumulative_points), linewidth=1) + 
+  labs(
+    title = "Comparative visualization of performance of each school with a hypothetical team", 
+     x = "Year", 
+     y = "Running total points", 
+     color = "Schools") + 
+  theme_bw() + 
+  theme(
+    plot.title = element_text(hjust=-0.20, size = 10, face = 'bold'), 
+    axis.title = element_text(size=10),
+    legend.title = element_text(hjust=0.5)
+    ) 
+```
+
+_Strengths of this visualization:_
+
+- It shows the comparison with the hypothetical school in one single layered visualization.
+- Using colors as a dimension helps separate each schoool's performace over the years
+
+_Weaknesses of the Visualization:_
+
++ There is a lot of congestion due to the large number of schools
++ There is no noticeable distinguish in the color palette used to label each school
+
+
+_A finding from my visualization:_
+
++ Looking at the plot, I can comment that close to half the schools recorded have performed way above the performance of a hypothetical school that gains 35 points per year. 
++ I can also tell that the top performing school is obviously Tennessee, and the least is Texas A&M. I do not necessarily need to look at the plot to know this information. The color palette was reordered by the decreasing total points of each school.
+
+## Part (d) 
+__Note that the original data includes 250+ schools. Propose, but do not implement, a visualization of the full dataset that makes use of dynamic queries. What questions would the visualization answer? What would be the structure of interaction, and how would the display update when the user provides a cue?__
+
+I would design a Shiny app that allows the user to choose what schools to visualize in the line plot using a drop down. I am also thinking of including a slider to narrow down the range of years as needed between 1981-2019. I can also inclde a check-box to "Compare with hypothetical school". When checked, a black line will appear over my visualization, similar to the plot above.
+
+My design could help answer the following questions:
+
+1. Compared to a hypothetical school, did school X perform better or worse?
+2. What was the increase in the running total score among schools A,B,C,... between the years X,Y?
+3. How better/badly did school A perform compared to school B between the years X and Y?
+
+
+# Q3. Poisson Guidance
+## Part (a)
+__Provide code implementing the figure that the student is interested in.__
+```{r poisson a, warning=F}
+df <- expand.grid(x=0:25, lambda=c(2,4,16)) %>% 
+  mutate(pmf = dpois(x,lambda))
+
+ggplot(df) + 
+  geom_bar(aes(x=x, y=pmf, fill=as.factor(lambda)), stat = 'identity') + 
+  labs(
+    title = "Poisson Distribution mass functions for a few choices of lambda",
+    fill = "Lambda"
+  ) + 
+  theme_light()
+```
+
+## Part (b) 
+__From the attempted solution, what conceptual difficulties do you think the student encountered?__
+
+I think the student encountered issues with the concept of construction of data frames. This problem could have been visualized by constructing only one data frame, while the student had to make 3 separate ones here. The student also seemed to have trouble in understanding on how to build ggplot parameters and plot aesthetics. 
+
+## Part (c)
+__How might you have helped the student resolve the challenges evident in part(b)? Briefly explain at least one concept that would improve their knowledge of either ggplot2 or effective code style.__
+
+I would have helped the student correct the data variables and bind all three functions in a single data frame. I would have explained them about how factorizing the lambda column will help in splitting the colors in the graphs equally. It is also good coding practice to name variables consistently when using similar names for similar data. In this example, the student named their data frames as ranges1 and ranges2, but for the third one, they named it as range3, which shows inconsistent coding style. Also in assigning manual colors, the student only defined 2 colors when they were actually hoping to visualize three plots.
+
+
+# Q4. Visual Redesign
+## Part (a)
+__Identify one of your past visualizations for which you still have data. Include a screenshot of this past visualization.__
+
+This was a visualization I did for an assignment in the past semester: 
+
+![Ramen Ratings](RamenRatings.png)
+
+## Part (b) 
+__Comment on the main takeaways from the visualization and the graphical relationships that lead to that conclusion. Is this takeaway consistent with the intended message? Are there important comparisons that you would like to highlight, but which are harder to make in the current design?__
+
+_Consistent Takeaways:_
+
+1. The stacked bars are all sorted in a decreasing order, making it easy for the viewer to get an immediate idea on rating trends, i.e. Japan is highest, and Phillippines is lowest
+2. There is no empty spacing in the graph despite some of the countri.es not using some packaging styles for ramen. The stacked plot ensures that every country has at least one colored bar above it.
+
+_Non-highlighted comparisons:_
+
+1. It is not easy to compare individual packaging style trends here as the individual styles are not sorted in a particular order
+2. When the numbers are small, due to common scaling, some colored bars are barely visible due to the stacking, making it difficult to gauge their numbers.
+
+## Part (c)
+__Comment on the legibility of the original visualization. Are there aspects of the visualization that are cluttered or difficult to read?__
+
+1. The plot is pleasantly simple to read with non-glaring, and distinctly clear colors. 
+2. Both the plot title and the legend guide are informative and representative of what the plot is trying to convey.
+3. My only complaint is with the text throughout the plot. It is quite tiny, making it difficult to read even from a short distance. 
+
+## Part (d)
+__Propose and implement an alternative design. What visual tasks do you prioritize in the new design? Did you have to make any trade-offs? Did you make any changes specifically to improve legibility.__
+
+I want to tackle the shortcomings mentioned in the previous part while also trying to preserve the positives held by the original visualization. I believe faceting will help identify individual packaging trends among countries. Also, contrary to standard design convention, I will implement independent scales per facet to make the bars appear big enough.
+
+```{r, fig.height=6, fig.width=6}
+rr <- read.csv("ramenratings.csv") 
+
+top_15_countries <- (rr %>% 
+  group_by(Country) %>% 
+  summarize(n = n()) %>% 
+  arrange(-n))$Country[1:16]
+
+top_5_packagings <- (rr %>% 
+  group_by(Style) %>% 
+  summarize(n = n()) %>% 
+  arrange(-n))$Style[1:5]
+
+rr_summ <- rr %>% 
+  group_by(Country, Style) %>% 
+  summarise(number_of_products = n()) %>% 
+  filter(Country %in% top_15_countries & Style %in% top_5_packagings ) %>%
+  arrange(-number_of_products, Country)
+
+ggplot(rr_summ) + 
+  geom_bar(aes(
+    reorder(Style,-number_of_products), 
+    number_of_products, 
+    fill=Style), stat = 'identity') + 
+  facet_wrap(~ reorder(Country,-number_of_products)) + 
+  labs(
+    title = "Ramen rated by top 5 packaging styles in top 16 countries of production",
+    x = "Packaging Styles", 
+    y = "Number of Ramen Products") + 
+  theme_light() + 
+  theme(
+    plot.title = element_text(hjust = 1),
+    axis.ticks.x = element_blank(), 
+    axis.text.x = element_blank(), 
+    legend.position = "bottom", 
+    legend.title = element_blank())
+```
+
+
+# Q5. Antibiotics Comparision
+## Part (a)
+__Review on Approach #1__
+
++ Well-suited visualization comparison: This plot properly shows which ind value has the most impact on every species.
+It also helps compare svalue over time across species given a specific ind.
++ Poorly-suited visualization comparison: It is difficult to see lower values of the svalue when all the points are cluttered
+in a specific region of the plot
+
+## Part (b)
+__Review on Approach #2__
+
++ Well-suited visualization comparison: This plot quite clearly shows the high extremes due to the gradient scale of the
+svalue.
++ Poorly-suited visualization comparison: On the other hand, due to the gradient colour scale, the lower svalue are
+quite indistinguishable.
+
+## Part (c)
+__Review on Approach #3__
+
++ Well-suited visualization comparison: The comparison of svalue for a specific species across the ind values.
++ Poorly-suited visualization comparison: relative difference of svalue of the species within a subplot when the all the
+svalue are crowded within a close region.
+
+## Part (d)
+__The implementation to Approach #2__
+```{r}
+antibiotic <- read_csv("https://uwmadison.box.com/shared/static/5jmd9pku62291ek20lioevsw1c588ahx.csv")
+
+ggplot(antibiotic, aes(x=time, y=ind, fill=value)) + 
+  geom_tile() +
+  facet_grid(species ~ .) +
+  scale_fill_gradient(low = "#EEF3FF", high = "dodgerblue3") +
+  scale_x_continuous(breaks = seq(0, 50, 10), expand = c(0, 0)) +
+  theme_grey() + 
+  theme(strip.text.y.right = element_text(angle = 0))
+
+```
+
+
+# Q6. More Shiny Bugs
+__None of the Shiny apps below work in the way that their authors intended. For each part, isolate the line(s) that contain the bug. Provide an alternative working implementation together with a conceptual explanation for why the error occurred.__
+
+## Part (a)
+The problem in this code was that the user did not use the `input$` identifier while accessing the `input_num`.
+```{r}
+ui <- fluidPage(
+  numericInput("input_num", "Enter a number:", value = 5),
+  textOutput("output_text")
+)
+server <- function(input, output) {
+  output$output_text <- renderText({
+  ifelse(input$input_num > 10, "Number is greater than 10", "Number is less than or equal to 10")
+})
+}
+# shinyApp(ui, server)
+```
+
+## Part (b)
+There were three issues here:
+
++ We are supposed to observe the event of click on the actionButton, so we need to use `observeEvent` instead of `observe`. 
++ We are supposed to indicate to the observe event what variable we are observing by providing its id, in this case `input$increment` as the first argument.
++ `counter` is a reactive value, so we are supposed to treat it as such when updating or displaying its value by using `()` at the end.
+```{r}
+ui <- fluidPage(
+  actionButton("increment", "Increment Counter"),
+  verbatimTextOutput("counter_text")
+)
+server <- function(input, output) {
+  counter <- reactiveVal(0)
+  observeEvent(input$increment, {
+    counter(counter() + 1)
+  })
+  output$counter_text <- renderPrint(counter())
+}
+# shinyApp(ui, server)
+```
+
+## Part (c)
+There were two issues in this code:
+
++ We should wrap the data filtering code inside a reactive expression, as it depends on the selection of `input$plot_type`.
++ As `cur_data` is a reactive expression, we need to access it using the paranthesis `cur_data()` while calling it in the renderPlot to be able to update the plot for every selection.
+```{r}
+ui <- fluidPage(
+  selectInput("plot_type", "Select plot type:", choices = c("cyl", "disp", "hp", "wt")),
+  plotOutput("plot")
+)
+server <- function(input, output) {
+  cur_data <- reactive({
+    mtcars[, c("mpg", input$plot_type)]
+  })
+  output$plot <- renderPlot({
+    ggplot(cur_data(), aes(x = mpg, y = .data[[input$plot_type]])) +
+      geom_point()
+  })
+}
+# shinyApp(ui, server)
+```
+
+## Part (d)
+There were two issues in this code:
+
++ `f_xy` needed to be a reactive expression to be updated whenever input variables `x` and `y` are being updated.
++ The output `renderText`s were using a different variable (which does not exist) instead of using `f_xy()` to display the output.
+```{r}
+ui <- fluidPage(
+  numericInput("x", "Enter x", value = 0),
+  numericInput("y", "Enter y", value = 0),
+  textOutput("output1"),
+  textOutput("output2")
+)
+f <- function(x, y) {
+  Sys.sleep(4)
+  sqrt(x^2 + y^2)
+}
+server <- function(input, output) {
+  f_xy <- reactive(f(input$x, input$y))
+  output$output1 <- renderText({
+    paste("f(x, y) ˆ 2:", f_xy()^2)
+  })
+  output$output2 <- renderText({
+    paste("f(x, y) ˆ 3:", f_xy()^3)
+  })
+}
+# shinyApp(ui, server)
+```
+
+
+

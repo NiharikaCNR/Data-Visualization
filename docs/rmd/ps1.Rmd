@@ -23,7 +23,7 @@ Steps followed:
 2. Eliminated rows with __na__ values
 3. Removed the years that appear less than 10 times
 ```{r coffee a}
-coffee = read_csv("coffee_ratings.csv")
+coffee = read_csv("../data/coffee_ratings.csv")
 
 coffee$harvest_year = str_extract(coffee$harvest_year, "20[0-9][0-9]")
 
@@ -105,7 +105,7 @@ ggplot(coffee_varieties) +
 ## Part (d)
 __Study a public analysis of the same dataset. For example, you can skim David Robinson’s screencast or Benjamin Smith’s blog, but don’t feel constrained to these two. Comment on either (i) one code technique you learned from the example or (ii) the visual design strengths/weaknesses of one figure.__
 
-![Coffee_Image](coffee-img-2.png)
+![Coffee_Image](../media/PS1-Q1d-CoffeeRatings.png)
 I would like to comment on the above visualization from Benjamin Smith's blog.
 
 + The visualization answers quite a decent question of showing how active a country is in the coffee trade.
@@ -119,7 +119,7 @@ I would like to comment on the above visualization from Benjamin Smith's blog.
 ## Part (a)
 __Derive new columns representing (i) the cumulative total number of points over time for each school (ii) the cumulative total number of points over time for a hypothetical team that earns 35 points a year.__
 ```{r ncaa a}
-ncaa <- read_csv("https://raw.githubusercontent.com/krisrs1128/stat992_f23/main/exercises/ps1/ncaa_filtered.csv")
+ncaa <- read_csv("../data/ncaa_filtered.csv")
 
 ncaa = ncaa %>% 
   mutate(hypo_team_points = 35) %>%
@@ -226,7 +226,7 @@ __Identify one of your past visualizations for which you still have data. Includ
 
 This was a visualization I did for an assignment in the past semester: 
 
-![Ramen Ratings](RamenRatings.png)
+![Ramen Ratings](../media/PS1-Q4a-RamenRatings.png)
 
 ## Part (b) 
 __Comment on the main takeaways from the visualization and the graphical relationships that lead to that conclusion. Is this takeaway consistent with the intended message? Are there important comparisons that you would like to highlight, but which are harder to make in the current design?__
@@ -254,7 +254,7 @@ __Propose and implement an alternative design. What visual tasks do you prioriti
 I want to tackle the shortcomings mentioned in the previous part while also trying to preserve the positives held by the original visualization. I believe faceting will help identify individual packaging trends among countries. Also, contrary to standard design convention, I will implement independent scales per facet to make the bars appear big enough.
 
 ```{r, fig.height=6, fig.width=6}
-rr <- read.csv("ramenratings.csv") 
+rr <- read_csv("../data/ramenratings.csv") 
 
 top_15_countries <- (rr %>% 
   group_by(Country) %>% 
@@ -319,7 +319,7 @@ svalue are crowded within a close region.
 ## Part (d)
 __The implementation to Approach #2__
 ```{r}
-antibiotic <- read_csv("https://uwmadison.box.com/shared/static/5jmd9pku62291ek20lioevsw1c588ahx.csv")
+antibiotic <- read_csv("../data/antibiotics.csv")
 
 ggplot(antibiotic, aes(x=time, y=ind, fill=value)) + 
   geom_tile() +

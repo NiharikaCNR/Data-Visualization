@@ -1,0 +1,37 @@
+#content {
+  max-width: 100%;
+  /*background: #efd7b8;*/
+}
+
+#content img {
+  width: 1200px;
+}
+
+table:not(.dataTable) tr:nth-child(2n) {
+  background-color: #fcfcfc;
+}
+
+
+
+
+/*
+#sidebar {
+  background: #8d3312;
+}
+
+#content div.sourceCode { 
+  background: #efd7b8;
+}
+
+h1, h2, h3, h4, h5, h6, legend {
+  color: #33110e;
+}
+
+#sidebar h2 {
+  background-color: #33110e;
+}
+
+pre {
+  background-color: #fff2e2;
+}
+*/

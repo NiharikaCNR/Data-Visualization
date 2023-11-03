@@ -1,0 +1,154 @@
+---
+title: 'STAT 679: Problem Set #3'
+author: "Niharika Chunduru"
+output: rmdformats::readthedown
+css: ../styles/ps3.css
+# date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(ceramic)
+library(ggHoriPlot)
+library(sf)
+library(shiny)
+library(tidyverse)
+library(terra)
+library(tmap)
+library(ggplot2)
+library(kableExtra)
+library(ggalluvial)
+library(extrafont)
+
+loadfonts(device = "all", quiet = T)
+
+page_bg_color = "#fcfcfc"
+plot_font = "AppleMyungjo"
+
+theme_ps3 <- theme_classic() +
+  theme(
+    text = element_text(size = 12, family = plot_font),
+    plot.title = element_text(size = 18, face = 'bold', hjust=0.5),
+    axis.ticks = element_blank(),
+    axis.text = element_text(size=10),
+    panel.grid.major = element_line(),
+    panel.grid.minor.x = element_line(),
+    plot.background = element_rect(fill = page_bg_color),
+    panel.background = element_rect(fill = page_bg_color),
+    legend.text = element_text(size=8),
+    legend.background = element_rect(fill = page_bg_color)
+  )
+theme_set(theme_ps3)
+
+Sys.setenv(MAPBOX_API_KEY="pk.eyJ1Ijoia3Jpc3JzMTEyOCIsImEiOiJjbDYzdjJzczQya3JzM2Jtb2E0NWU1a3B3In0.Mk4-pmKi_klg3EKfTw-JbQ")
+```
+
+# Q1. Glacial Lakes
+__The data at [this](https://github.com/NiharikaCNR/Data-Visualization/blob/main/docs/data/GL_3basins_2015.geojson) link contain labels of glacial lakes the Hindu Kush Himalaya, created during an ecological survey in 2015 by the International Centre for Integrated Mountain Development.__
+
+## Part (a)
+__a.1 How many lakes are in this dataset?__
+```{r}
+lakes = read_sf("../data/GL_3basins_2015.geojson")
+num_lakes = length(unique(lakes$GL_ID))
+```
+There are  <span style="background-color: yellow; font-weight: bold;">`r num_lakes`</span> lakes in this data set.
+
+__a.2 What are the latitude / longitude coordinates of the largest lakes in each Sub-basin?__
+```{r}
+largest_lakes = group_by(lakes, Sub_Basin) %>% 
+  filter(Area == max(Area)) %>% 
+  select(GL_ID,Sub_Basin,Area,Latitude,Longitude)
+```
+
+```{r, echo=F}
+kable(largest_lakes, format = "html") %>%
+  kable_styling(full_width = T, bootstrap_options = c("striped", "condensed"))
+```
+
+## Part (b)
+__Plot the polygons associated with each of the lakes identified in part (a).__ 
+
+_Hint: You may find it useful to split lakes across panels using the `tm_facets` function. If you use this approach, make sure to include a scale with `tm_scale_bar()`, so that it is clear that lakes have different sizes._
+```{r lake-polygons}
+tm_shape(largest_lakes) + 
+  tm_polygons(col='Area', palette="Blues",legend.show=F) + 
+  tm_facets(by='Sub_Basin', free.scales = F, ncol=5, scale.factor = 4) +
+  tm_scale_bar(width=0.5) + 
+  tm_layout(
+    main.title = "Largest lakes in each Sub Basin", main.title.position = c('center','top'), main.title.fontfamily = plot_font, 
+    panel.label.bg.color="darkgoldenrod4", panel.label.fontface='bold', panel.label.color = page_bg_color, panel.label.fontfamily = plot_font,
+    bg.color = "darkseagreen", outer.bg.color = page_bg_color, 
+    )
+```
+
+## Part (c)
+__Visualize all lakes with latitude between 28.2 and 28.4 and with longitude between 85.8 and 86. Optionally, add a basemap associated with each lake.__ 
+```{r lakes-with-basemap, fig.width=12}
+lakes_subset = lakes %>% 
+  filter((Latitude>=28.2 & Latitude<=28.4) & (Longitude>=85.8 & Longitude<=86.0))
+
+basemap = cc_location(loc=c(85.9,28.3), buffer=1e4)
+
+tm_shape(basemap) + 
+  tm_rgb(alpha=0.9) + 
+  tm_shape(lakes_subset) + 
+  tm_polygons(col='deepskyblue3') + 
+  tm_layout(bg.color=page_bg_color, inner.margins=c(0,0), frame=F, saturation=-1)
+```
+
+
+# Q2. Australian Pharmaceuticals II
+__The PBS data set contains the number of orders filed every month for different classes of pharmaceutical drugs, as tracked by the Australian Pharmaceutical Benefits Scheme. The code below takes the full PBS data set and filters down to the 10 most commonly prescribed pharmaceutical types. This problem will ask you to implement and compare two approaches to visualizing this data set.__
+
+```{r}
+pbs_full <- read_csv("../data/PBS_random.csv") %>% 
+  mutate(Month = as.Date(Month))
+
+top_atcs <- pbs_full %>%
+  group_by(ATC2_desc) %>%
+  summarise(total = sum(Scripts)) %>%
+  slice_max(total, n = 10) %>%
+  pull(ATC2_desc)
+
+pbs <- pbs_full %>%
+  filter(ATC2_desc %in% top_atcs, Month > "2007-01-01")
+```
+
+## Part (a)
+__Implement a stacked area visualization of these data.__
+```{r pbs-stacked-area, fig.width=13}
+ggplot(pbs) + 
+  geom_area(aes(Month,Scripts/1e6, col=ATC2_desc, fill = ATC2_desc), alpha=0.6) +
+  scale_x_date(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0), n.breaks=11) + 
+  scale_fill_brewer(palette = "Paired") + 
+  scale_colour_brewer(palette = "Paired") + 
+  labs(
+    title = "Sales of 10 most commonly prescribed pharma drugs from 2007 till date", 
+    y = "Orders sold (in millions)", fill = "CLASS OF DRUG", col = "CLASS OF DRUG"
+  )
+```
+
+## Part (b)
+__Implement an alluvial visualization of these data.__
+```{r pbs-alluvial, fig.width=13}
+ggplot(pbs) +
+  geom_alluvium(aes(Month, Scripts/1e6, fill = ATC2_desc, col = ATC2_desc, alluvium = ATC2_desc), decreasing = FALSE, alpha = 0.6) +
+  scale_x_date(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0), n.breaks=11) + 
+  scale_fill_brewer(palette = "Paired") + 
+  scale_colour_brewer(palette = "Paired") + 
+  labs(
+    title = "Sales of 10 most commonly prescribed pharma drugs from 2007 till date", 
+    y = "Orders sold (in millions)", fill = "CLASS OF DRUG", col = "CLASS OF DRUG"
+  )
+```
+
+## Part (c)
+__Compare and contrast the strengths and weaknesses of these two visualization strategies. Which user queries are easier to answer using one approach vs. the other?__
+
+
+
+
+

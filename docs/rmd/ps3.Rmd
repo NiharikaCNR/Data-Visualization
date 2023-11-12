@@ -19,6 +19,7 @@ library(ggplot2)
 library(kableExtra)
 library(ggalluvial)
 library(extrafont)
+library(RColorBrewer)
 
 loadfonts(device = "all", quiet = T)
 
@@ -31,12 +32,12 @@ theme_ps3 <- theme_classic() +
     plot.title = element_text(size = 18, face = 'bold', hjust=0.5),
     axis.ticks = element_blank(),
     axis.text = element_text(size=10),
-    panel.grid.major = element_line(),
-    panel.grid.minor.x = element_line(),
+    # panel.grid.major = element_line(),
+    # panel.grid.minor = element_line(),
     plot.background = element_rect(fill = page_bg_color),
     panel.background = element_rect(fill = page_bg_color),
     legend.text = element_text(size=8),
-    legend.background = element_rect(fill = page_bg_color)
+    legend.background = element_rect(fill = NA)
   )
 theme_set(theme_ps3)
 
@@ -63,7 +64,7 @@ largest_lakes = group_by(lakes, Sub_Basin) %>%
 
 ```{r, echo=F}
 kable(largest_lakes, format = "html") %>%
-  kable_styling(full_width = T, bootstrap_options = c("striped", "condensed"))
+  kable_styling(full_width = F, bootstrap_options = c("condensed"))
 ```
 
 ## Part (b)
@@ -147,6 +148,115 @@ ggplot(pbs) +
 
 ## Part (c)
 __Compare and contrast the strengths and weaknesses of these two visualization strategies. Which user queries are easier to answer using one approach vs. the other?__
+
+<table>
+  <thead>
+    <tr>
+    <th> Visualization Strategy </th>
+    <th> Strengths </th>
+    <th> Weakensses </th>
+    </tr>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th> Stacked Area </th>
+      <td> Areas stacked on top of each other makes it easy to tell how the totals at any given time-point breakdown. <br> We can easily answer user queries on what drugs had the highest sales at a time point, and also identify overall trend.</td>
+      <td> Not easy to rank the drug classes on their relative sales. </td>
+    </tr>
+    <tr>
+      <th> Alluvial </th>
+      <td> Ranking is easy to identify. At any given time-point, the streams are decreasingly ordered by drug sales contribution. <br> So, user-queries on what drug has the highest/lowest sales, or change in drug sales across time-points can ve easily answered with this visualization. </td>
+      <td> Not easy to gauge the total sales at a single glance as it works more as a comparison visualization. </td>
+    </tr>
+  </tbody>
+</table>
+
+
+# Q3. Spotify Time Series II
+__The code below provides the number of Spotify streams for the 40 tracks with the highest stream count in the Spotify 100 dataset for 2017. This problem will ask you to explore a few different strategies that can be used to visualize this time series collection.__
+
+```{r spotify-load-data}
+spotify_full <- read_csv("../data/spotify.csv")
+
+top_songs <- spotify_full %>% 
+  group_by(track_name) %>%
+  summarise(total = sum(streams)) %>%
+  slice_max(total, n = 40) %>%
+  pull(track_name)
+
+top_10_songs <- spotify_full %>% 
+  group_by(track_name) %>%
+  summarise(total = sum(streams)) %>%
+  slice_max(total, n = 10) %>%
+  pull(track_name)
+
+spotify <- spotify_full %>% filter(track_name %in% top_songs)
+
+# Data Preprocessing to cut down a long song name
+spotify$track_name[spotify$track_name==unique(spotify$track_name)[14]] <- "I Don’t Wanna Live Forever"
+spotify$track_name = trimws(str_replace(spotify$track_name, " \\(([^)]+)\\)", ""))
+```
+
+## Part (a)
+__Design and implement a line-based visualization of these data.__
+
+```{r spotify-line, fig.width=10}
+# TODO: Save plots as images and load them in the Knit output
+ggplot(spotify, aes(x=date)) + 
+  geom_line(aes(date, streams/1e6, group=track_name),col="forestgreen", alpha=0.5,size=0.6) +
+  scale_x_date(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0), breaks = seq(0,12,1)) + 
+  labs(title="Spotify's 40 top streamed songs in 2017", x="",y="Streams (in millions)") +
+  theme(axis.ticks.x = element_line(), axis.text.x=element_text(size=7, hjust=0.7), panel.grid.minor = element_blank())
+```
+
+## Part (b)
+__Design and implement a horizon plot visualization of these data.__
+
+```{r spotify-horizon, fig.height=30, fig.width=15}
+# cutpoints = seq(0,12,1)
+# mid_point = cutpoints[2]
+
+custom_greys_palette = colorRampPalette(c("black","#EAEAEA"), space = "Lab")
+custom_greens_palette = colorRampPalette(c("#BAE4B3","forestgreen"), space = "Lab")
+spotify_palette = c((custom_greys_palette(8)),custom_greens_palette(4))
+# spotify_palette = c(custom_greys_palette(9), rev(brewer.pal(3, "Greens")))
+
+# TODO: Save plots as images and load them in the Knit output
+ggplot(spotify, aes(date,streams/1e6)) + 
+  geom_horizon(aes(fill=..Cutpoints..), origin = 4, horizonscale = seq(0,12,1), alpha=0.8) + 
+  facet_wrap(~ reorder(track_name, -streams), ncol=1, strip.position = 'left') +
+  scale_x_date(expand = c(0,0)) + 
+  scale_y_continuous(expand = c(0,0), breaks = seq(0,12,3)) + 
+  scale_fill_manual(values = spotify_palette) + 
+  labs(title="Spotify's top streamed songs in 2017", x="",y="",fill="Streams (in millions)") + 
+  guides(fill = guide_legend(nrow=1, reverse=T)) +
+  theme(
+    axis.ticks.x = element_line(), 
+    axis.text.x=element_text(hjust=0.9),
+    axis.text.y=element_blank(), 
+    strip.text.y.left = element_text(angle=0, hjust=0.5), 
+    legend.position = "top")
+```
+
+## Part (c)
+__Building from the static views from (a - b), propose, but do not implement, a visualization of this data set that makes use of dynamic queries. What would be the structure of interaction, and how would the display update when the user provides a cue? Explain how you would use one type of D3 selection or mouse event to implement this hypothetical interactivity.__
+
+### Response:
+I have two ideas for dynamic queries for these temporal visualizations.
+
+1. Adding a brush interaction inside a facet. When the user brushes over a region inside one facet, then that time period will be highlighted (and probably zoomed in too) for all the song facets. This would provide a microscopic analysis of the song streams in a small period of time. I would also add in a "Reset Zoom" action button to rest to original view. A non-graphical alternative to this query is to replace the brush with a date range slider.
+2. A multi-selec tool to filter artists, or tracks from the datasets. Facets will appear/disappear based on the filter chosen.
+
+The above interactive queries can also be combined together to have a highly responsive and information dense visualization.
+
+
+## Q4 - CalFresh Enrollment II
+__In this problem, we will develop an interactively linked spatial and temporal visualization of enrollment data from CalFresh, a nutritional assistance program in California. We will use D3 in this problem__
+
+### Part (a)
+__Using a line generator, create a static line plot that visualizes change in enrollment for every county in California.__
 
 
 

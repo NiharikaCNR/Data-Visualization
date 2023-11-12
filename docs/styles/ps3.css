@@ -3,12 +3,13 @@
   /*background: #efd7b8;*/
 }
 
-#content img {
-  width: 1200px;
-}
 
 table:not(.dataTable) tr:nth-child(2n) {
   background-color: #fcfcfc;
+}
+
+body {
+  text-align: justify;
 }
 
 

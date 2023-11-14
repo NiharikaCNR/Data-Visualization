@@ -41,6 +41,7 @@ theme_ps3 <- theme_classic() +
   )
 theme_set(theme_ps3)
 
+tmap_mode("view")
 Sys.setenv(MAPBOX_API_KEY="pk.eyJ1Ijoia3Jpc3JzMTEyOCIsImEiOiJjbDYzdjJzczQya3JzM2Jtb2E0NWU1a3B3In0.Mk4-pmKi_klg3EKfTw-JbQ")
 ```
 
@@ -59,6 +60,7 @@ __a.2 What are the latitude / longitude coordinates of the largest lakes in each
 ```{r}
 largest_lakes = group_by(lakes, Sub_Basin) %>% 
   filter(Area == max(Area)) %>% 
+  arrange(-Area) %>%
   select(GL_ID,Sub_Basin,Area,Latitude,Longitude)
 ```
 
@@ -71,31 +73,30 @@ kable(largest_lakes, format = "html") %>%
 __Plot the polygons associated with each of the lakes identified in part (a).__ 
 
 _Hint: You may find it useful to split lakes across panels using the `tm_facets` function. If you use this approach, make sure to include a scale with `tm_scale_bar()`, so that it is clear that lakes have different sizes._
-```{r lake-polygons}
-tm_shape(largest_lakes) + 
+```{r lake-polygons, fig.width=15.5}
+tm_shape(largest_lakes %>% select(-GL_ID)) + 
   tm_polygons(col='Area', palette="Blues",legend.show=F) + 
   tm_facets(by='Sub_Basin', free.scales = F, ncol=5, scale.factor = 4) +
-  tm_scale_bar(width=0.5) + 
-  tm_layout(
-    main.title = "Largest lakes in each Sub Basin", main.title.position = c('center','top'), main.title.fontfamily = plot_font, 
-    panel.label.bg.color="darkgoldenrod4", panel.label.fontface='bold', panel.label.color = page_bg_color, panel.label.fontfamily = plot_font,
-    bg.color = "darkseagreen", outer.bg.color = page_bg_color, 
-    )
+  tm_scale_bar()
 ```
+
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 
 ## Part (c)
 __Visualize all lakes with latitude between 28.2 and 28.4 and with longitude between 85.8 and 86. Optionally, add a basemap associated with each lake.__ 
-```{r lakes-with-basemap, fig.width=12}
+```{r lakes-with-basemap, fig.width=10.8}
 lakes_subset = lakes %>% 
   filter((Latitude>=28.2 & Latitude<=28.4) & (Longitude>=85.8 & Longitude<=86.0))
 
-basemap = cc_location(loc=c(85.9,28.3), buffer=1e4)
+basemap = cc_location(loc=c(85.9,28.3), buffer=15e3)
 
 tm_shape(basemap) + 
   tm_rgb(alpha=0.9) + 
   tm_shape(lakes_subset) + 
   tm_polygons(col='deepskyblue3') + 
-  tm_layout(bg.color=page_bg_color, inner.margins=c(0,0), frame=F, saturation=-1)
+  tm_layout(bg.color=page_bg_color, inner.margins=c(0,0), frame=F, saturation=-1) + 
+  tm_view(set.bounds = c(85.8,28.2,86.0,28.4), set.zoom.limits =c(11,14))
 ```
 
 

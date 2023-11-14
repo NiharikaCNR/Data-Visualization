@@ -1,13 +1,11 @@
 function make_scales(data, margin) {
-  yExtent = d3.extent(data.map(d => d.calfresh))
-  yScale = (yExtent[1]-yExtent[0])/100
   return {
     x: d3.scaleTime()
       .domain(d3.extent(data.map(d => d.date)))
       .range([margin.left, 600 - margin.right]),
     y: d3.scaleLinear()
-      .domain([yExtent[0]-yScale, yExtent[1]+yScale])
-      .range([400 - margin.bottom, margin.top]), 
+      .domain(d3.extent(data.map(d => d.calfresh)))
+      .range([450, margin.top]), 
     fill: d3.scaleSequential(d3.interpolateHslLong(d3.hsl('#fff'), d3.hsl('#72172f')))
     .domain(d3.extent(data.map(d => d.calfresh)))
   }
@@ -16,8 +14,18 @@ function make_scales(data, margin) {
 function draw_axes(scales, margin) {
   let x_axis = d3.axisBottom(scales.x)
   d3.select("#x_axis")
-    .attr("transform", `translate(0, ${400 - margin.bottom})`)
+    .attr("transform", `translate(0, ${450})`)
     .call(x_axis)
+
+  d3.select("#y_label")
+  .attrs({
+    // transform: 'translate(250, 420)',
+    x: -margin.top*2,
+    y: 20,  
+    transform: 'rotate(-90)'
+  }) 
+  .style('text-anchor', 'middle')
+  .text(`Calfresh Enrollment (in ,000s)`)
 
   let y_axis = d3.axisLeft(scales.y)
   d3.select("#y_axis")
@@ -28,29 +36,29 @@ function draw_axes(scales, margin) {
 
 }
 
-function draw_lines(county_data, scales) {
+function draw_lines(data, scales) {
   let path_generator = d3.line()
     .x(d => scales.x(d.date))
     .y(d => scales.y(d.calfresh))
 
   d3.select("#lines")
     .selectAll("path")
-    .data([county_data]).enter()
+    .data([data]).enter()
     .append("path")
     .transition(300)
     .ease(d3.easeLinear)
     .attrs({
       d: path_generator,
       id: cd => cd.county,
-      stroke: "#a8a8a8",
-      "stroke-width": 3, 
-      fill: 'none', 
-      opacity: 0.9
+      // stroke: "#9F2042",
+      "stroke-width": 2, 
+      // fill: 'none', 
+      // opacity: 0.7
     })
 
     // d3.select("#lines")
     //   .selectAll("path")
-    //   .data([county_data])
+    //   .data([data])
     //   .join(
     //     enter => enter.append("path")
     //                   .transition(300)
@@ -79,7 +87,7 @@ function draw_lines(county_data, scales) {
 }
 
 function generate_ts(data) {
-  let margin = {top: 100, right: 10, bottom: 20, left: 50}
+  let margin = {top: 150, right: 10, left: 70}
 
   let scales = make_scales(data, margin)
   draw_axes(scales, margin)
@@ -97,13 +105,18 @@ function update_ts(map_data, calfresh_data) {
   // Updating the map - highlighting the selected county
   d3.select("#map")
     .selectAll("path")
-    .attr("stroke-width", d => d.properties.county == map_data.properties.county ? 4 : 0)
+    .attrs({
+      "stroke-width": e => e.properties.county == map_data.properties.county ? 4 : 0.5, 
+      stroke: e => e.properties.county == map_data.properties.county ? "white" : "black"
+    })
+
+  d3.select("#name")
+    .select("text")
+    .text(`${map_data.properties.county} County`);
 }
 
 function generate_map(map_data, calfresh_data) {
-  let width = 500,
-      height = 400
-  let proj = d3.geoMercator().fitSize([width, height], map_data)
+  let proj = d3.geoMercator().fitSize([500,500], map_data)
   let path = d3.geoPath().projection(proj)
 
   let calfresh_county_means = calfresh_data.reduce((result, cd) => {
@@ -126,23 +139,21 @@ function generate_map(map_data, calfresh_data) {
     .append("path")
     .attrs({
       d: path,
-      // fill: d => scales.fill(d.properties.Shape__Length/1e5),
       fill: d => fillScale(calfresh_county_means[d.properties.county].mean),
-      "stroke-width": 0,
-      stroke: "#000",
+      "stroke-width": 0.5,
+      stroke: 'black',
       transform: 'translate(700,0)'
     })
     .on("mouseover", (_, map_data) => update_ts(map_data,calfresh_data));
 
   d3.select("#name")
     .append("text")
-    .attr("transform", "translate(100, 100)")
-    .text("hover a glacier")
+    .text("Hover over a county")
 }
 
 function visualize([calfresh_data, map_data]) {
   let parseDate = d3.timeParse('%Y %b')
-  calfresh_data.forEach((d) => {d.date = parseDate(d.date)})
+  calfresh_data.forEach((d) => {d.date = parseDate(d.date); d.calfresh /= 1000})
   generate_ts(calfresh_data)
   generate_map(map_data, calfresh_data)
 }

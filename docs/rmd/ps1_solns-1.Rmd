@@ -1,0 +1,826 @@
+---
+title: "Problem Set 1 - Solutions"
+output: rmdformats::readthedown
+css: custom.css
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  message = FALSE, 
+  warning = FALSE, 
+  cache = FALSE, 
+  dev.args = list(bg = "transparent"),
+  fig.align = "center"
+)
+```
+
+```{r}
+library(tidyverse)
+my_theme <- theme_classic() +
+  theme(
+    axis.ticks = element_blank(),
+    legend.background = element_rect(fill="transparent"),
+    legend.box.background = element_rect(fill="transparent"),
+    panel.background = element_rect(fill = "#f7f7f7"),
+    panel.grid.minor = element_blank(),
+    plot.background = element_rect(fill = "transparent", colour = NA),
+    strip.background = element_rect(fill="transparent"),
+  )
+theme_set(my_theme)
+```
+
+# Coffee Ratings
+
+## Scoring
+
+* b - c, Design (1 point): Creative and readable (1 point), generally appropriate but generic (.5 points), lacking in critical attention or difficult to read (0 points)
+* a - c, Code (1 point): Clear and concise (1 points), correct but unnecessarily complex (0.5 points), missing (0 points)
+* d, Discussion (1 point): Insightful discussion with extensive references (1 point),
+an appropriate example, but with underdeveloped commentary (0.5 points), generic
+or superficial discussion (0 points)
+
+## Question
+
+The data at this
+[link](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-07-07/readme.md)
+comes from a 2018 report by the Coffee Quality Institute. We'll be working with this [lightly processed version of the data](
+https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv).
+
+## Example Solution
+
+a. Clean the `harvest_year` column. Specifically, if a year of the form 20XX
+appears in the name, keep it in a new column. For example, `23 July 2010`
+and `Abril - Julio /2011` should be converted into 2010 and 2011,
+respectively. Remove years that appear less than 10 times.
+
+    We first look for occurrences of `20[digit][digit]` using the appropriate
+    regex from the `str_extract` command. The `[0-9]+` syntax means it will look
+    for strings that start with 20 and continue on with an arbitrary number of
+    digits. There are many ways to filter down to only years with at least ten
+    entries -- a direct approach is to use `table` to create a vector of years
+    to keep, and then subset according to that. A more concise approach is to
+    count the number of rows in each year group by first applying `group_by` and
+    using the fact that `n()` internally tracks the size of each new group.
+
+    ```{r}
+    coffee_ratings <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv") |>
+      mutate(harvest_year = str_extract(harvest_year, "20[0-9]+")) |>
+      group_by(harvest_year) |>
+      filter(n() >= 10)
+    ```
+
+b. Create a layered visualization of `aroma` against the year variable
+defined in (a).
+
+    A boxplot makes sense in this context because
+
+    ```{r, fig.height = 3, fig.width = 5}
+    ggplot(coffee_ratings, aes(aroma, harvest_year)) +
+      geom_boxplot(fill = "#D9A362", linewidth = 1) +
+      labs(y = "Harvest Year", x = "Aroma Rating")
+    ```
+    
+    We can see that there are some coffees getting aroma ratings of 0, and also
+    that many of the entries lack a ratings year. This is good information to
+    have found out, but let's also zoom into the data without those entries, to
+    better discern a potential trend around where most of the ratings are found.
+    
+    ```{r, fig.height = 3, fig.width = 5}
+    coffee_subset <- coffee_ratings |>
+      filter(!is.na(harvest_year), aroma > 0)
+    
+    ggplot(coffee_subset, aes(aroma, harvest_year)) +
+      geom_boxplot(fill = "#D9A362", linewidth = 1) +
+      labs(y = "Harvest Year", x = "Aroma Rating")
+    ```
+    
+    This step wasn't required for full credit, but the new view does make it
+    clear that 2009 - 2010 were years of unusually high aroma ratings (or
+    perhaps when the database began, it focused on higher quality coffees).
+
+c. Develop a new question related to these data. Make sure that it refers to
+3 or more variables. Provide a visualization that answers your question.
+
+    Do the patterns we see in the previous part hold uniformly across all
+    processing methods? We can facet by the `processing_method` variable to
+    answer this. However, a direct modification of the solution to part (b) has
+    a few issues. First, there are a few `Other` and `NA` values for
+    `processing_method` which take up substantial screen space without
+    contributing much information, so we'll filter those away. Second, the
+    levels used to describe the processing method are quite verbose, so the
+    facet titles end up taking a lot of space. We'll assume our readers are
+    looking for associations across general processing types and won't be
+    concerned by our simplifying more precise descriptions, like `Pulped natural
+    / honey` to short names like `Pulped`.
+
+    Finally, we've ordered the facets by average rating, and we've removed years
+    from the display that had no data, using `scales = "free"` and `space =
+    "free"`. The figure shows some differences in the trends across processing
+    types. For example, `Semi-pulped` had a large jump in 2014. `Natural` has
+    been gradually decreasing since 2011 while `Washed` has stayed
+    steady/slightly increased. It's also interesting that the recording for
+    `Pulped` begins during the same year that the recording for `Semi-pulped`
+    ends.
+
+    ```{r, fig.width = 4.5, fig.height = 5}
+    coffee_subset |>
+      filter(!is.na(processing_method), processing_method != "Other") |>
+      mutate(processing_method = fct_recode(
+        processing_method, 
+        `Semi-pulped` = "Semi-washed / Semi-pulped",
+        Natural = "Natural / Dry",
+        Washed = "Washed / Wet",
+        Pulped = "Pulped natural / honey"
+        )
+      ) |>
+      ggplot(aes(balance, harvest_year)) +
+      geom_boxplot(fill = "#D9A362", linewidth = 1) +
+      labs(y = "Harvest Year", x = "Aroma Rating") +
+      facet_grid(reorder(processing_method, -aroma) ~ ., space = "free", scales = "free") +
+      theme(strip.text.y = element_text(angle = 0))
+    ```
+
+d. Study a public analysis of any public dataset. For example, you can skim
+David Robinson's [screencast](https://www.youtube.com/watch?v=-1x8Kpyndss) or
+Benjamin Smith's
+[blog](https://bensstats.wordpress.com/2021/01/08/robservations-7-tidytuesday-analysing-coffee-ratings-data/)
+about the coffee data discussed in this problem, or you could watch one of Julia
+Silge's [screencast](https://www.youtube.com/juliasilge) or read one of Danielle
+Navarro's [blog](https://blog.djnavarro.net/) posts on any data analysis. You
+can also choose your own public data analysis. Comment on either (i) one code
+technique you learned from the example or (ii) the visual design of one figures.
+
+    There are many possible answers to this part. We'll analyze the figure
+    below, from the bensstats post on [Analysing Coffee Ratings
+    Data](https://bensstats.wordpress.com/2021/01/08/robservations-7-tidytuesday-analysing-coffee-ratings-data/).
+    
+    <img src="figure/coffee-img-6.png"/>
+    
+    For being such a simple graphic (essentially a 5-by-2 table), it shows some
+    careful attention. The title and annotation are all complete, and the coffee
+    mug icon is a nice touch. The custom colors, which reflects the coffee
+    theme, is also thoughtful. The figure could be slightly improved by ordering
+    the countries according to the ratio -- the difference between countries is
+    striking, and the alphabetical ordering creates an artificial trend. The
+    figure could likely also be enriched by layering on additional variables.
+    The figure takes up quite a bit of space within the post, but it could
+    communicate more by layering on temporal or coffee characteristcs, for
+    example by grouping the bars or through faceting.
+
+# NCAA Trends
+
+## Scoring
+
+* a - c, Design (1.5 points): Creative and readable (1.5 point), generally appropriate but generic (.75 points), lacking in critical attention or difficult to read (0 points)
+* a - c, Code (1 points): Clear and concise (1 points), correct but unnecessarily complex (0.5 points), missing (0 points)
+* d, Discussion (0.5 points): Creative and well-developed discussion
+which references course concepts (1 point), appropriate discussion but
+potentially underdeveloped (0.5 points), vague or unclear proposal (0 points).
+
+## Question
+
+This [538
+article](https://fivethirtyeight.com/features/louisiana-tech-was-the-uconn-of-the-80s/)
+describes NCAA women's college basketball team performance over time. Each team
+was assigned a score representing how successfully it played during each year
+from 1982 to the present. This overall score is contained in the "points" column
+below.
+
+```{r}
+ncaa <- read_csv("https://github.com/krisrs1128/stat992_f23/raw/main/exercises/ps1/ncaa_filtered.csv") 
+```
+
+## Example Solution
+
+a. Derive new columns representing (i) the cumulative total number of points
+over time for each school (ii) the cumulative total number of points over
+time for a hypothetical team that earns 35 points a year.
+
+    We can use `mutate` to define the new columns. The only subtlety is that we
+    need to define the running totals for each school in the dataset. This can
+    be accomplished by first applying `group_by(school)`.
+
+    ```{r}
+    ncaa <- ncaa |>
+      group_by(school) |>
+      mutate(
+        totals = cumsum(points),
+        expected = 35 * (year - 1982)
+      )
+    ```
+  
+b. Create a visualization that shows the running total number of points for
+each school over time. If you use faceting, ensure that facets are sorted in
+an informative way.
+
+    We've created a line plot of running scores over time, faceted by schools,
+    from the most to the least successful. Since the $x$-axis labels were
+    getting crowded, we've manually set the years to display using the `breaks`
+    argument to `scale_x_continuous`.
+
+    ```{r, fig.width = 8.5, fig.height = 5}
+    ggplot(ncaa, aes(year)) +
+      geom_line(aes(y = totals)) +
+      facet_wrap(~ reorder(school, -points)) +
+      scale_x_continuous(breaks = c(1985, 1995, 2005, 2015)) +
+      theme(legend.position = "bottom") +
+      labs(fill = "Difference from Hypothetical", y = "Points", x = "Year")
+    ```
+    
+c. Design a visualization that that compares each school's performance with
+that of the hypothetical team that averages 35 points per year. See the
+figure below for an example approach. Explain the strengths and weaknesses
+of your design and comment on a finding from your visualization.
+
+    Our idea is to fill in the difference between the true the hypothetical
+    scores with a color indicating the size of the gap. The approach is to draw
+    a small, thin rectangle for each year, with the fill of that rectangle
+    encoding the difference. A small modification to our previous solution is
+    that we should use `geom_step` instead of `geom_line`, to make sure that the
+    lines are exactly flush with the rectangles.
+
+    ```{r, fig.width = 8.5, fig.height = 5}
+    ggplot(ncaa, aes(year)) +
+      geom_step(aes(y = totals)) +
+      geom_step(aes(y = expected)) +
+      geom_rect(aes(xmin = year, xmax = year + 1, ymin = expected, ymax = totals, fill = totals - expected)) +
+      facet_wrap(~ reorder(school, -points)) +
+      scale_x_continuous(breaks = c(1985, 1995, 2005, 2015)) +
+      scale_fill_gradient2(low = "#D9814E", high = "#88A5BF") +
+      theme(legend.position = "bottom") +
+      labs(fill = "Difference from Hypothetical", y = "Points", x = "Year")
+    ```
+    
+d. Note that the original data includes 250+ schools. Propose, but do not
+implement, a visualization of the full dataset that makes use of dynamic
+queries. What questions would the visualization answer? What would be the
+structure of interaction, and how would the display update when the user
+provides a cue?
+
+    We imagine building a visualization that answers questions like the one in
+    part (c), but applied to all schools in the dataset. Specifically, we would
+    like to answer the following questions:
+    
+      * Which schools have been the most consistently successful? 
+      * Which schools have had large increases/decreases in performance?
+      * Which schools are emerging as potential top contenders in the future?
+      
+    The imagined approach is to use graphical queries applied to summary
+    statistics calculated across each school. We would calculate the overall
+    trend and the average second derivative for each school and visualize those
+    as two small histograms. By brushing those histograms, a faceted plot, like
+    that in part (c), would appear, giving the detailed trends of all schools
+    within the current selection. If the number of schools within the selection
+    is too large, we might split the faceted plot across several pages, using
+    `facet_wrap_paginate` from the `ggforce` package.
+
+# Poisson Guidance
+
+## Scoring
+
+* a, Design (1 points): Creative and readable (1 point), generally appropriate but generic (.5 points), lacking in critical attention or difficult to read (0 points)
+* a, Code (0.5 point): Correct and readable code (0.5 points), either incorrect or
+unreadable code (0 points).
+* b, c, Discussion (.75 points each): Creative and well-developed discussion
+which references course concepts (1 point), appropriate discussion but
+potentially underdeveloped (0.5 points), vague or unclear proposal (0 points).
+
+## Question
+
+This exercises asks you to imagine working with a student who is just beginning
+to learn ggplot2 and needs help constructing a plot. Specifically, the student
+would like to create a barplot of Poisson distribution mass functions for a few
+choices of $\lambda$, like the figure displayed below. The following code is
+their initial attempt.
+
+```{r, eval = FALSE}
+mylambda1 <- function(x) dpois(x, lambda = 2)
+mylambda2 <- function(x) dpois(x, lambda = 4)
+mylambda3 <- function(x) dpois(x, lambda = 16)
+
+ranges1 <- data.frame(x=c(0,25), PMF = factor(1))
+ranges2 <- data.frame(x=c(0,25), PMF = factor(2))
+range3 <- data.frame(x=c(0,25), PMF = factor(3))
+
+ggplot(NULL, aes(x=x, colour=PMF)) +
+   stat_function(data = ranges1, fun = mylambda1, size = 1.5) +
+   stat_function(data = ranges2, fun = mylambda2, size = 1.5) +
+   stat_function(data = range3, fun = mylambda3, size = 1.5) +
+
+  geom_bar()+
+
+  theme_bw(base_size = 14) +
+   scale_colour_manual("Parameters", guide="legend", 
+                  labels = c("2", "4", "16"), 
+                  values= c("red", "green"))
+```
+
+## Example Solution
+
+a. Provide code implementing the figure that the student is interested in.
+
+    We will create a small dataset storing the Poisson parameters values of
+    interest and then use `geom_col` to draw the density. One trick is that we
+    can directly apply the `dpois` function within the aesthetic encoding,
+    rather than first introducing this as a new column in the input data.
+
+    ```{r, fig.width = 8, fig.height = 3.5, out.width = 600}
+    tibble(
+      x = rep(seq_len(25), 3),
+      lambda = rep(c(2, 4, 16), each = 25)
+    ) |>
+    ggplot() +
+      geom_col(aes(x, dpois(x, lambda), fill = factor(lambda)), alpha = 0.8) +
+      scale_fill_brewer(palette = "Set2") +
+      scale_y_continuous(expand = c(0, 0)) +
+      scale_x_continuous(expand = c(0, 0)) +
+      labs(x = "x", y = "Poisson Density", fill = expression(lambda))
+    ```
+    
+b. From the attempted solution, what conceptual difficulties do you think
+the student encountered?
+
+   The solution seems to confuse steps that create the data to visualize from
+   those that construct the visualization. For example, it seems to try to
+   define functions that will be executed before reaching the `geom`s that
+   define the figure.
+
+c. How might you have helped the student resolve the challenges evident in
+part(b)? Briefly explain at least one concept that would improve their
+knowledge of either ggplot2 or effective code style.
+
+    In `ggplot2`, it is important to deliberately construct the rows and columns
+    of the input data so that they can be visually encoded later. Formatting the
+    data and constructing the graphical encoding should be viewed as two
+    distinct tasks, but which inform one another. A second comment is that there
+    are many instances of unnecessarily duplicated code. Whenever there is
+    involved copy-and-pasting when solving a problem, it might be worth thinking
+    about a more unified abstraction, either a new way of combining data
+    structures or a function that encapsulates the repeated code.
+
+# Visual Redesign
+
+## Scoring
+
+* a - b (1 point): Accurate and complete analysis of visualization's goals,
+using concepts introduced in class (1 point), generally accurate, but
+potentially vague or poorly referenced, analysis (0.5 points), little evidence
+of specific analysis (0 points).
+* c (1 point): Critical and insightful analysis of past visualization's
+limitations (1 point), generally correct analysis but failing to observe
+important limitations (0.5 points), imprecise or poorly elaborated analysis (0
+points).
+* d, design and code (1.5 points): Substantive improvements in new design and
+elegant code (1.5 points), appropriate design and readable code (0.75 points),
+negligible changes in design or unreadable code (0 points).
+* d, discussion (1.5 points): Benefits of new design are discussed clearly and
+refer to concepts from class (1.5 points), benefits of design are discussed
+imprecisely (0.75 points), missing discussion (0 points).
+
+## Question
+
+In this exercise, you will find a visualization you have made in the past and
+redesign it using the skills you have learned in this course.
+
+a. Identify one of your past visualizations for which you still have data.
+Include a screenshot of this past visualization.
+b. Comment on the main takeaways from the visualization and the graphical
+relationships that lead to that conclusion. Is this takeaway consistent with
+the intended message? Are there important comparisons that you would like to
+highlight, but which are harder to make in the current design?
+c. Comment on the legibility of the original visualization. Are there aspects
+of the visualization that are cluttered or difficult to read?
+d. Propose and implement an alternative design. What visual tasks do you
+prioritize in the new design? Did you have to make any trade-offs? Did you
+make any changes specifically to improve legibility.
+
+## Solutions
+
+Solutions to this problem will vary. If you would like to discuss your specific
+visualization and redesign, please see the instructor. Two exceptionally good
+example solutions are included below.
+
+### Example Solution A
+
+The solution below is due to Jonquil Liao.
+
+a. Identify one of your past visualizations for which you still have data. Include a screenshot of this past visualization.
+
+    ```{r}
+    chocolate <- read.csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-01-18/chocolate.csv')
+    ```
+    
+    Previously I wanted to check if different cocoa percentage lead to different ratings. So I did:
+    
+    ```{r}
+    library(tidyr)
+    cocoa_percent = extract_numeric(chocolate$cocoa_percent)
+    boxplot(chocolate$rating~cocoa_percent)
+    ```
+
+b. Comment on the main takeaways from the visualization and the graphical relationships that lead to that conclusion. Is this takeaway consistent with the intended message? Are there important comparisons that you would like to highlight, but which are harder to make in the current design?\
+
+    Cocoa_percent is shown in x-axis, chocolate ratings are shown as y-axis. Previously I concluded the ratings are generally higher when cocoa_percent is between 60-80% (medium percent), because on the graph, the 'boxes' are 'higher' for medium cocoa percent while 'lower' when the percentage is over 80 or below 60. I think is good to make a rating vs. percent boxplot to compare them, it roughly gives us a sense of how the rating changes across cocoa percent. But we can't tell the size of each group, boxplot only shows how the data points spread out but does not indicate which boxes have bigger samples.
+    
+c. Comment on the legibility of the original visualization. Are there aspects of the visualization that are cluttered or difficult to read?\
+
+    The x-axis does not show all the scales, but I think that is fine. However, the boxplot can not clearly show the distribution of ratings.
+
+d. Propose and implement an alternative design. What visual tasks do you prioritize in the new design? Did you have to make any trade-offs? Did you make any changes specifically to improve legibility.
+
+    ```{r}
+    chocolate %>%
+      group_by(rating) %>%
+      count(cocoa_percent) %>%
+      ggplot() +
+      geom_point(aes(extract_numeric(cocoa_percent),rating,size = n, col = rating)) +
+      labs(x = 'cocoa percent', y = 'rating')
+    ```
+    
+    I changed boxplot into scatterplot with the size of the dot indicating the number of samples in that category. Because in this plot, I want to stress the problem that boxplot cannot show sample size and hence we don't know if there is truly higher rating among medium cocoa percent or it is just because of lacking of data points in higher and lower cocoa percent. From the new graph, I figure we cannot conclude higher rating for 60-80% chocolate anymore, there are barely data points < 60 or > 85, a biased conclusion may be developed based on these data.
+    
+### Example Solution B
+
+The solution below is due to Margaret Turner.
+
+a.  Identify one of your past visualizations for which you still have data.
+Include a screenshot of this past visualization.
+
+    ```{r, fig.height=3, fig.width=5}
+    # Access data
+    soil_add <- c("Additive Concentrations",
+                  "(1)      1.9  2.1",
+                  "(1)      2.4  2.8",
+                  "(1)      1.4  1.6",
+                  "(2)      2.0  1.8",
+                  "(2)      1.2  1.2",
+                  "(2)      1.9  1.6",
+                  "(3)      2.9  3.0",
+                  "(3)      3.7  3.2",
+                  "(3)      2.2  2.2",
+                  "(4)      5.1  4.5",
+                  "(4)      3.3  3.0",
+                  "(4)      3.0  3.5",
+                  "") %>% 
+      stringr::str_split(., " ") %>% 
+      .[2:13] %>% 
+      unlist(.) %>% 
+      .[. != ""] %>% 
+      matrix(., ncol = 3, byrow = TRUE) %>% 
+      data.frame() %>% 
+      mutate(pot = rep(1:3, times = 4)) %>% 
+      tidyr::pivot_longer(., cols = c(X2, X3)) %>% 
+      select(-name) %>% 
+      transmute(additive = factor(X1),
+                concentration = as.numeric(value),
+                pot = factor(pot))
+    
+    soil_add %>% head() %>% print()
+    
+    soil_add %>% 
+      ggplot(aes(x = additive, y = concentration)) +
+      geom_boxplot() +
+      geom_jitter(size = 3, alpha = 0.75, width = 0.05) +
+      theme_minimal() +
+      labs(x = "Treatment", y = "Complex molecule concentration (ppm)")
+    ```
+  
+b. Comment on the main takeaways from the visualization and the graphical
+relationships that lead to that conclusion. Is this takeaway consistent with
+the intended message? Are there important comparisons that you would like to
+highlight, but which are harder to make in the current design?
+
+    This visualization was prepared to examine the effects of four soil additive treatments on the yield of a complex molecule in corn roots.
+    
+    One critical aspect of the experimental design is that two yields were measured from each plant, but this visualization fails to convey this.
+    Additionally, the x-axis is not helpful.
+    The labels of the four treatments provide no information about the treatments themselves.
+    
+    From the current visualization, the viewer can determine that some treatments seem to affect the molecular yield, but the viewer has no context for what the treatments are and is missing crucial information about subsampling.
+    
+c. Comment on the legibility of the original visualization. Are there aspects
+of the visualization that are cluttered or difficult to read?
+    
+    Jittering was used since some of the samples within the same treatment had equal yields (and, therefore, equal `x` and `y` values in this visualization).
+    However, jittering such a small number of points over a boxplot looks kind of sloppy, especially because the points are so large.
+    I had increased the size of the points to help them stand out from the boxplots.
+    
+d. Propose and implement an alternative design. What visual tasks do you
+prioritize in the new design? Did you have to make any trade-offs? Did you
+make any changes specifically to improve legibility.
+
+    I had reservations about encoding plant grouping using color or point shape.
+    There are 12 plants overall; 3 plants for each treatment group.
+    A 3-color (or 3-point-shape) scale for plant might be misleading, as it implies some nonexistent connection between "plant 1" in each of the treatment groups.
+    However, a 12-value scale would have too many colors (or point shapes) to have good contrast within each treatment group.
+    
+    Therefore, I created scatterplots faceted by the soil additive treatments, using an arbitrary x-axis to separate the subsamples from each plant.
+    Violin plots replace the boxplots from the first visualization.
+    The violin plots are light green to help the points stand out without having to make them awkwardly large.
+    Each faceted plot has a short description of the soil additive treatment (rather than a context-less number).
+    
+    It is still not clear from the visualization itself that the x-axis breaks up subsamples (a caption would be required to explain this).
+    
+    ```{r}
+    set.seed(1416) # To standardize the jitter
+    
+    additive.labs <- c("Standard", "New", "New + 1% P", "New + 2% P")
+    names(additive.labs) <- c("(1)", "(2)", "(3)", "(4)")
+    
+    ggplot(soil_add, aes(y = concentration)) +
+      geom_violin(aes(x = "2", y = concentration), fill = "#1BC51B", alpha = 0.4) +
+      geom_jitter(aes(x = pot), height = 0, width = 0.15, size = 2, alpha = 0.8) +
+      facet_grid(
+        ~additive, switch = "x",
+        labeller = labeller(additive = additive.labs)
+        ) +
+      theme_bw() +
+      labs(title = "Effect of soil additives on complex molecule yield",
+           x = "Soil additive blend", 
+           y = "Complex molecule concentration (ppm)") +
+      theme(
+        plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()
+        )  
+    ```
+  
+# Antibiotics Comparison
+
+## Scoring
+
+* Discussion (2.5 points): Complete and accurate (2.5 points), moderately developed
+and mostly accurate (1.25 point), insufficiently developed or broadly inaccurate (0
+points)
+* Code (0.5 point): Correct and readable code (0.5 points), either incorrect or
+unreadable code (0 points).
+
+## Question
+
+Below, we provide three approaches to visualizing species abundance over time in
+an antibiotics dataset.
+
+```{r}
+antibiotic <- read_csv("https://uwmadison.box.com/shared/static/5jmd9pku62291ek20lioevsw1c588ahx.csv")
+antibiotic
+```
+    
+For each approach, describe,
+
+  * One type of visual comparison for which the visualization is well-suited.
+  
+  * One type of visual comparison for which the visualization is poorly-suited.
+  
+Make sure to explain your reasoning.
+
+## Example Solution
+
+```{r}
+antibiotic <- read_csv("https://uwmadison.box.com/shared/static/5jmd9pku62291ek20lioevsw1c588ahx.csv")
+ggplot(antibiotic, aes(time)) +
+  geom_line(aes(y = svalue), size = 1.2) +
+  geom_point(aes(y = value, col = antibiotic), size = 0.8, alpha = 0.8) +
+  scale_color_brewer(palette = "Set2") +
+  facet_grid(species ~ ind) +
+  guides(color = guide_legend(override.aes = list(size = 2, alpha = 1))) +
+  theme(strip.text.y = element_text(angle = 0))
+```
+
+This figure is _effective_ for,
+
+* Comparing abundances over time for each species and subject combination, even
+for rare species. It is easy to compare $y$-axis values within individual
+panels. Since the $y$-axis scales are not scaled, trends in even the rare
+species are visible.
+* Comparing species abundance across antibiotic treatment regimes. Since color
+is used to encode treatment regime, we can easily see how peaks or valleys
+coincide with the treatments.
+
+This figure is _ineffective_ for,
+
+* Comparing abundances for different species for the same subject. Since the $y$-axes scales are not shared, it is hard to compare abundances across species.
+* Ranking species by overall abundance within or across subjects. Again, this is a consequence of the unshared scales.
+* Comparing trends in species abundance across subjects (especially D vs. F).
+Since our eyes have to travel left and right to compare species trends, it is
+harder to evaluate differences across subjects, relative to if they were all
+overlapping, for example.
+
+```{r}
+ggplot(antibiotic) +
+  geom_tile(aes(time, ind, fill = value)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_fill_distiller(direction = 1) +
+  facet_grid(species ~ .) +
+  theme(strip.text.y = element_text(angle = 0))
+```
+
+This figure is _effective_ for,
+
+* For individual species, comparing trends over time across subjects. All the
+subjects are placed adjacent to one another within each panel, so our eyes don’t
+have to travel such a large distance to make the comparison.
+* Across species, recognizing shared increases or decreases at specific
+timepoints. Since the plot is so compact, all the values for a single timepoint
+are easily queryable.
+* Recognizing the species and samples with the highest abundances. The cells
+with the darkest colors pop out from among the rest.
+
+This figure is _ineffective_ for,
+
+* Comparing the absolute abundances of a single species over time. It is
+difficult to compare shades of the same color.
+* Evaluating the abundance of relatively rare species. These species all have
+light colors, and gradations smaller than the color scale bin size are not
+visible.
+* Comparing species abundances for a single subject. We have to move our eyes
+across the three panels to make comparisons about a single species.
+
+
+    ```{r}
+    ggplot(antibiotic) +
+      geom_line(aes(time, svalue, col = species)) +
+      facet_grid(ind ~ .) +
+      scale_color_brewer(palette = "Set2") +
+      scale_x_continuous(expand = c(0, 0)) +
+      labs(x = "Time", y = "Value") +
+      theme(legend.position = "Bottom")
+    ```
+
+This figure is _effective_ for,
+
+* Within a single subject, ranking species by overall abundance. We can easily
+see which colors lie above the others within any given panel. 
+* Comparing abundance over time for a single subject and species. We can see
+increases and decreases clearly when plotting against a y-axis scale.
+* Comparing overall species abundances across subjects. Since the same y-axis
+scale is used across panels, we can conclude that some subjects have more counts
+overall.
+
+This figure is _ineffective_ for,
+
+* Comparing trends for a single species across subjects. It is visually
+challenging to match colors across the three panels.
+* Comparing trends for low abundance species. For low abundances, many of the
+lines overlap with one another.
+
+# More Shiny Bugs
+
+## Scoring
+
+* For each part, 0.25 points are awarded for a correct answer and 0.5 points are
+awarded for a thorough explanation.
+
+## Question
+
+None of the Shiny apps below work in the way that their authors intended. For
+each part, isolate the line(s) that contain the bug. Provide an alternative
+working implementation together with a conceptual explanation for why the error
+occurred.
+
+## Example Solution
+
+a. Program (a). Goal: When the user inputs a number, the program reports
+whether or not that number is larger than 10.
+
+    The server has no way of referring to `input_num` in isolation. Instead, we
+    need to refer to the input from the UI using `input$input_num`.
+
+    ```{r, shiny_bug1, eval = FALSE}
+    ui <- fluidPage(
+      numericInput("input_num", "Enter a number:", value = 5),
+      textOutput("output_text")
+    )
+    
+    server <- function(input, output) {
+      output$output_text <- renderText({
+        ifelse(input_num > 10, "Number is greater than 10", "Number is less than or equal to 10")
+      })
+    }
+    
+    shinyApp(ui, server)
+    ```
+    
+b. Program (b). Goal: When the user clicks a button labeled "Increment
+Counter", then the text next to the button should increase by one.
+
+    `reactiveVal`s cannot be set using assignment, like this attempt assumes. We
+    could change the counter's value to `n` by using `counter(n)`. Since in this
+    case, we want to set the value to one larger than the current value, we
+    could use `counter(counter() + 1)`.
+
+    ```{r, eval = FALSE}
+    ui <- fluidPage(
+      actionButton("increment", "Increment Counter"),
+      verbatimTextOutput("counter_text")
+    )
+    
+    server <- function(input, output) {
+      counter <- reactiveVal(0)
+      
+      observe({
+        counter <- counter + 1
+      })
+      
+      output$counter_text <- renderPrint(counter)
+    }
+    
+    shinyApp(ui, server)
+    ```
+    
+c. Program (c). Goal: When the user selects a variable from the selection
+menu, we will show a scatterplot of `mpg` against the selected variable in
+the `mtcars` dataset.
+
+    The UI `input` variable cannot be referred to from outside a `reactive`,
+    `render*`, or `observe` context, as this code attempts to do in the
+    definition of `cur_data`. The code would work if it were wrapped within a
+    `reactive()` statement and then called using `cur_data()` in the
+    `renderPlot()` -- see the revised server below.
+  
+    ```{r, eval = FALSE}
+    ui <- fluidPage(
+      selectInput("plot_type", "Select plot type:", choices = c("cyl", "disp", "hp", "wt")),
+      plotOutput("plot")
+    )
+    
+    server <- function(input, output) {
+      cur_data <- mtcars[, c("mpg", input$plot_type)]
+      output$plot <- renderPlot({
+        ggplot(cur_data, aes(mpg, .data[[y_var]])) +
+          geom_point()
+      })
+    }
+    
+    shinyApp(ui, server)
+    ```
+    
+    ```{r, eval = FALSE}
+    server <- function(input, output) {
+      cur_data <- reactive({
+        mtcars[, c("mpg", input$plot_type)]
+      })
+
+      output$plot <- renderPlot({
+        ggplot(cur_data(), aes(mpg, .data[[y_var]])) +
+          geom_point()
+      })
+    }
+    ```
+    
+d. Program (d). Goal: When the user enters numbers $x$ and $y$, the program
+will print $f\left(x, y\right) ^ 2$ and $f\left(x, y\right) ^ 3$. We wanted
+to implement this without computing $f\left(x, y\right)$ twice, because this
+operation is time consuming.
+
+    There are two bugs here, one conceptual and one technical. The conceptual
+    bug is that `f_xy` should be a reactive statement, like in the example
+    above, because `input` cannot be referred to in isolation. The technical
+    issue is that `total` is never defined. This should be replaced by a call to
+    the reactive that evaluates the function. See the revised server below.
+      
+    ```{r, eval = FALSE}
+    ui <- fluidPage(
+      numericInput("x", "Enter x", value = 0),
+      numericInput("y", "Enter y", value = 0),
+      textOutput("output1"),
+      textOutput("output2")
+    )
+    
+    f <- function(x, y) {
+      Sys.sleep(4)
+      sqrt(x ^ 2 + y ^ 2)
+    }
+    
+    server <- function(input, output) {
+      f_xy <- f(input$x, input$y)
+      
+      output$output1 <- renderText({
+        paste("f(x, y) ^ 2:", total ^ 2)
+      })
+      
+      output$output2 <- renderText({
+        paste("f(x, y) ^ 3:", total ^ 3)
+      })
+    }
+    
+    shinyApp(ui, server)
+    ```
+
+    ```{r, eval = FALSE}
+    server <- function(input, output) {
+      f_xy <- reacttive(f(input$x, input$y))
+      
+      output$output1 <- renderText({
+        paste("f(x, y) ^ 2:", f_xy() ^ 2)
+      })
+      
+      output$output2 <- renderText({
+        paste("f(x, y) ^ 3:", f_xy() ^ 3)
+      })
+    }
+    ```
+    
+    

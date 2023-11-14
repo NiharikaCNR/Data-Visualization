@@ -215,13 +215,9 @@ ggplot(spotify, aes(x=date)) +
 __Design and implement a horizon plot visualization of these data.__
 
 ```{r spotify-horizon, fig.height=30, fig.width=15}
-# cutpoints = seq(0,12,1)
-# mid_point = cutpoints[2]
-
 custom_greys_palette = colorRampPalette(c("black","#EAEAEA"), space = "Lab")
 custom_greens_palette = colorRampPalette(c("#BAE4B3","forestgreen"), space = "Lab")
 spotify_palette = c((custom_greys_palette(8)),custom_greens_palette(4))
-# spotify_palette = c(custom_greys_palette(9), rev(brewer.pal(3, "Greens")))
 
 # TODO: Save plots as images and load them in the Knit output
 ggplot(spotify, aes(date,streams/1e6)) + 
@@ -311,10 +307,19 @@ __We routinely encounter spatial and temporal data in everyday life, from the fr
 
 __a. Describe one type of spatial or temporal data set (loosely defined) that you encounter in a nonacademic context. What visual encodings are used? Does it implement any interactivity?__
 
-I use the weather app on my phone every morning. The app shows a single-line plot of the temperature of the day every hour. It also shows a small icon next to every (hourly) point on the line to show if the sky is sunny, clear, cloudy, rainy, or snowy at the time-point. When I click on one time-point, the app shows a detailed description of the weather at the time.
+I use the weather app on my phone every morning. The app shows a single-line plot of the temperature of the day every hour. It also shows a small icon next to every (hourly) point on the line to show if the sky is sunny, clear, cloudy, rainy, or snowy at the time-point, and another small water drop at the bottom showing the chances of precipitation in percentages. When I click on one time-point, the app shows a detailed description of the weather at the time.
 
 __b. What questions does the visualization help you answer? How easily can you arrive at an accurate answer?__
 
 I plan my outfits according to the results of this visualization everyday. If it is cold and snowing, I layer up and wear warm clothes. It is very easy to arrive at an accurate answer with this, as there is only one single line for the current day in this visualization, and only one point on the line for every hour.
+
+__c. In the spirit of the re-imagined parking sign project, propose an alternative representation of these data (or an alternative way of interacting with the same representation). Why did you propose the design that you did? What advantages do you think it has?__
+
+I had a fun thought on how this line plot can be shown differently. I would put up a circular clock and replace every hour point with the icons used to display the sky condition. I would fill up the circular clock 30% by water if chances of precipitation at that time is 30%. The hour hand would point towards the current hour and two small rectangular boxes inside the circle will show the numeric values of the temperature and the UV Index. I will swipe over the clock to see the same info for the next 12 hours.
+
+One advantage it has is that I can see the weather trend of the day in a single glance. In the original line plot, I have to keep scrolling to the right to see the evening weather, given the limited screen-space of my mobile. 
+
+
+
 
 

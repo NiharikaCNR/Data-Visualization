@@ -1,0 +1,799 @@
+---
+title: "Problem Set 2 - Solutions"
+output: rmdformats::readthedown
+css: custom.css
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, cache = FALSE, dev.args = list(bg = "transparent"))
+```
+
+```{r}
+library(bslib)
+library(ggridges)
+library(shiny)
+library(tidyverse)
+my_theme <- theme_classic() +
+  theme(
+    panel.background = element_rect(fill="transparent"),
+    strip.background = element_rect(fill="transparent"),
+    plot.background = element_rect(fill="transparent", color=NA),
+    panel.grid.minor = element_blank(),
+    axis.ticks = element_blank(),
+    legend.background = element_rect(fill="transparent"),
+    legend.box.background = element_rect(fill="transparent")
+)
+theme_set(my_theme)
+```
+
+
+# American Time Use Survey
+
+## Scoring
+
+* a - b, Design (1 points): Creative and readable (1 point), generally appropriate but with some lack of critical attention (.5 points), difficult to read (0 points)
+* a - b, Code (0.5 points): Clear and concise (0.5 points), correct but unnecessarily complex (0.25 points), missing (0 points)
+* c, Design and Discussion (1 points): Creative question, solution, and
+interpretation (1 point), appropriate question, solution, and interpretation,
+but perhaps simplistic question / difficult to read design / underdeveloped
+interpretation (0.5 points), misleading design or no interpretation (0 points)
+* c, Code (0.5 points): Clear and concise (0.5 points), correct but unnecessarily complex (0.25 points), missing (0 points)
+
+## Question
+
+The data [here](https://github.com/krisrs1128/stat992_f23/raw/main/exercises/ps2/activity.csv) come from the American Time Use
+Survey ([source](https://www.kaggle.com/bls/american-time-use-survey)). Each row
+gives the typical proportion of Americans engaged in different activities during
+a given time of the day. The `time` column gives the time of day in five-minute
+intervals^[The date component is an irrelevant placeholder. We included it to
+simplify the time-of-day formatting in axis labels.]. The `prop` column gives
+the raw proportion of people engaged in the activity, `prop_relative` gives that
+proportion normalized to the peak proportion for that activity, and
+`prop_smooth` is a moving-average smooth of `prop_relative`. We'll use this data
+to see variation in activities across different times of day.
+
+```{r}
+activity <- read_csv("https://github.com/krisrs1128/stat992_f23/raw/main/exercises/ps2/activity.csv")
+```
+
+## Example Solution
+
+a. Skim the data without visualizing it. Write three questions for follow-up
+analysis. Among these, at least one should compare multiple activities with
+one another, and at least one should compare timepoints within a single
+activity.
+
+    Here are some example questions:
+
+    * Which activities have their activity use concentrated in a specific time of day? Which are spread out more evenly across the day?
+    * Which of the activities have multimodal time uses (e.g., popular both in morning and evening, but not midday)?
+    * Which activities are common every early in the day? Which are common very late in the day?
+    * Are there any activities that are more common during "breaks" during the middle of teh workday?
+    
+    An aside: What makes for good questions in data visualization? There are two
+    slightly different approaches. The first is to identify questions for which
+    we really don't have any strong prior expectation. For these questions, no
+    matter the answer, we are bound to gain information. The second approach is
+    to enumerate all prior expectations and then formulate questions that will
+    either confirm or invalidate these guesses. In the first case, we are
+    looking for visualizations that sharpen vague beliefs about the state of the
+    world. In the second, we are being open-minded about evidence that
+    contradicts our currently-established beliefs.
+  
+b. Make a plot of `prop_smooth` over time for each activity. Justify your
+choice of visual encoding -- what questions does it help answer efficiently?
+
+    We'll try making a heatmap of activity over time, sorting activities according
+to the time at which they are most popular. To enable this sorting, we need to
+find the peak time for each activity -- this is done in the `group_by` step. We then convert the `activity` into a factor whose levels are sorted according to these peak times.
+
+    ```{r}
+    activity_order <- activity |>
+      group_by(activity) |>
+      filter(prop_smooth == max(prop_smooth)) |>
+      arrange(rev(time)) |>
+      pull(activity)
+    
+    activity <- activity |>
+      mutate(activity = factor(activity, levels = activity_order))
+    ```
+    
+    Next we can make the heatmap. We can very clearly see activities which have
+  bimodal time use patterns (e.g., using cardiovascular equipment in the morning
+  and evening) vs. those with only a single mode (e.g., hiking). Some of the
+  activities seem to have a wider range of high activity times (e.g., fishing)
+  while others are more concentrated (e.g., martial arts). Surprisingly few have
+  peaks around lunch time (the main exceptions are golfing and racquet sports).
+
+    ```{r, fig.width = 6, fig.height = 3.5}
+    ggplot(activity) +
+      geom_tile(aes(time, activity, fill = prop_smooth)) +
+      scale_fill_distiller(palette = "Spectral") +
+      scale_x_datetime(date_labels = "%H:%M", expand = c(0, 0)) +
+      labs(
+        fill = "Relative Activity",
+        x = "Time of Day",
+        y = "Activity"
+      )
+    ```
+  
+c. Create an alternative visualization using a different encoding. For
+example, you may (but do not have to) use a heatmap, horizon
+[[notes](https://krisrs1128.github.io/stat992_f23/website/docs/2022/06/01/week7-2.html),
+[package](https://rivasiker.github.io/ggHoriPlot/)] or ridgeline
+[[notes](https://krisrs1128.github.io/stat992_f23/website/docs/2022/06/02/week13-1.html),
+[package](https://wilkelab.org/ggridges/)] plot. Compare the trade-offs
+involved between the two encodings. What questions are easier to answer
+using your visualization from (b), and which are easier to visualize using
+your visualization from (c)?
+
+    We will make a ridgeline plot for this part. From the documentation, we see
+    there is a function `geom_ridgeline_gradient` in the `ggridges` package that
+    lets us make a version of the heatmap above that also shows activity on the
+    $y$-axis. A few of the more subtle activity variations now become clearer,
+    for example, the double morning peak in yoga and the small 5:00pm peak in
+    softball.
+
+    ```{r, fig.width = 6, fig.height = 3.5}
+    ggplot(activity) +
+      geom_ridgeline_gradient(aes(x = time, y = activity, height = prop_smooth, fill = prop_smooth), size = 0.2) +
+      scale_fill_distiller(palette = "Spectral") +
+      scale_x_datetime(date_labels = "%H:%M", expand = c(0, 0)) +
+      labs(
+        fill = "Relative Activity",
+        x = "Time of Day",
+        y = "Activity"
+      )
+    ```
+  
+    The visualization in (b) makes it easier to read the orderings and peak
+    times across activities. In that approach, our eyes naturally follow the
+    path of peak times from the top to the bottom of the plot. Since the view is
+    compact, it is quite easy to compare separate activities. In contrast, the
+    ridgeline visualization makes it easy to distinguish fine variations within
+    an individual activity, at the expense of comparisons across activities. The
+    fine comparisons are possible because it's much easier to compare $y$-axis
+    positions for a single line than to compare colors in a heatmap. However,
+    since the visualization takes up more vertical space and the time series
+    shapes are so different across activities, it's more difficult to make
+    comparisons across activities.
+
+# Midwestern Power Plants
+
+## Scoring
+
+* a Design and code (0.5 points): Correct and polished static visualization (0.5
+points), correct visualization but in need of refinement (0.25 points), missing
+or difficult to read visualization (0 points).
+* b Design and code (1.5 point): Clear and effective visual design and
+implementation (1.5 points), correct but not refined design or implementation
+(0.75 points), messy or unclear design or implementation (0 points).
+* c Discussion (1 points): Correct and well-developed interpretation (1
+points), correct but somewhat underdeveloped (0.5 points), missing or incorrect
+interpretations (0 points).
+
+## Question
+
+Where does our electricity come from? The World Resources Institute compiles a
+[database](https://github.com/wri/global-power-plant-database/blob/master/output_database/global_power_plant_database.csv)
+of power plants to help answer this question. We'll read in a [small,
+preprocessed
+subset](https://github.com/krisrs1128/stat992_f23/raw/main/exercises/ps2/power_plants.geojson)
+focused on the upper midwest. Note that the data can be read in using the
+following code.
+
+```{r}
+library(sf)
+power_plants <- read_sf("https://raw.githubusercontent.com/krisrs1128/stat992_f23/main/exercises/ps2/power_plants.geojson") |>
+  mutate(
+    coords = st_coordinates(geometry),
+    longitude = coords[, 1],
+    latitude = coords[, 2]
+  )
+```
+
+## Example Solution
+
+a. Create a map of power plants that shows where plants are located, how they
+generate electricy (`primary_fuel`), and how much generation capacity they have
+(`capacity_mw`).
+
+    We'll plot the power plants at their `(longitude, latitude)` coordinates,
+    with size and color encoding capacity and fuel type, respectively. We've
+    manually created a color scheme to reflect the type of source (e.g., coal is
+    black, hydro is dark blue). We can't see the borders on this map. If you
+    look up some of the coordinate pairs, though, you'd see that this region
+    ranges from Minnesota/Iowa (far left) to Illinois/Indiana (bottom) to Michigan
+    (far right).
+
+    ```{r, out.width = 500}
+    cols <- c("Coal" = "#262626", "Gas" = "#F263B2", "Hydro" = "#5D75A6", "Solar" = "#EFF288", "Wind" = "#04BFBF", "Other" = "#D96C0D")
+    
+    ggplot(power_plants) +
+      geom_point(
+        aes(
+          longitude, 
+          latitude, 
+          col = primary_fuel,
+          size = capacity_mw
+        )
+      ) +
+      scale_color_manual(values = cols) +
+      coord_fixed() +
+      labs(
+        color = "Primary Fuel",
+        x = "Longitude",
+        y = "Latitude"
+      )
+    ```
+    
+    From this figure, we can see that there are many solar plants in Minnesota
+    and wind plants in Iowa.  Southern Illinois and Indiana have a concentration
+    of coal plants. This geographic variability might be due to either state
+    policy incentives or geographical characteristics. There are many solar and
+    wind plants, but they are generally smaller capacity compared to gas and
+    coal.
+  
+b. Create an interactive version of the map from version (a) that allows users
+to brush a histogram to highlight plants with generation capacity within a
+certain range. One potential solution is shown
+[here](https://github.com/krisrs1128/stat992_f23/blob/main/exercises/ps2/power_plants.mov).
+
+    To simplify the UI and server definitions in our Shiny App, we will first
+    define some functions for making each of the component
+    visualizations/tables. The first function, `scatterplot`, wraps the mapping
+    code from part (a). The second draws an overlaid histogram, similar to our
+    NYC rentals In-Class Demo. Specifically, it maintains a background histogram
+    of powerplant capacities no matter the user selection. Every time the user
+    updates a selection, a new histogram is overlaid to show the capacities of
+    power plants within the user's current selection.
+
+    ```{r}
+    scatterplot <- function(df, selected_) {
+      df |>
+        filter(selected_) |>
+        ggplot() +
+        geom_point(
+          aes(
+            longitude, 
+            latitude, 
+            col = primary_fuel,
+            size = capacity_mw
+          )
+        ) +
+        scale_color_manual(values = cols) +
+        coord_fixed() +
+        labs(
+          color = "Primary Fuel",
+          x = "Longitude",
+          y = "Latitude"
+        )
+    }
+    
+    overlay_histogram <- function(df, selected_) {
+      sub_df <- filter(df, selected_)
+      ggplot(df, aes(log_capacity, fill = primary_fuel)) +
+        geom_histogram(alpha = 0.3)  +
+        geom_histogram(data = sub_df) +
+        scale_y_continuous(expand = c(0, 0, 0.1, 0)) +
+        scale_x_continuous(expand = c(0, 0)) +
+        scale_fill_manual(values = cols) +
+        labs(
+          fill = "Fuel",
+          y = "Count",
+          x = "log(1 + Power)"
+        ) +
+        theme(
+          axis.title = element_text(size = 16), 
+          axis.text = element_text(size = 14),
+          legend.title = element_text(size = 16),
+          legend.text = element_text(size = 16)
+        )
+    }
+    ```
+
+    Finally, we include a function to filter and clean column names in a table that
+will show power plant-level details.
+
+    ```{r}
+    table_output <- function(df, selected_) {
+      filter(df, selected_) |>
+        as_tibble() |>
+        mutate(capacity_mw = round(capacity_mw, 3)) |>
+        select(name, owner, primary_fuel, commissioning_year, capacity_mw) |>
+        rename(Plant = name, Owner = owner, Fuel = primary_fuel, `Year Built` = commissioning_year, `Capacity (MW)` = capacity_mw)
+    }
+    ```
+    
+    The block below defines the Shiny app. The UI splits the histogram/table
+    (left) and map (right) using separate `column` elements. The histogram
+    incldues a `brush` input which will allow us to filter the map and table
+    according to plant capacity. We use the `bslib` library to customize the
+    overall appearance of the Shiny App.
+    
+    In the server, we use the combination of a `reactiveVal` element and
+    `observeEvent` call to update the table and map according to user
+    selections. This brushing strategy is identical to the examples from our
+    Week 3 In-Class Demos.
+  
+    ```{r, eval = FALSE}
+    ui <- fluidPage(
+      h3("Midwest Power Plants"),
+      fluidRow(
+        column(6,
+               plotOutput("histogram", brush = brushOpts("plot_brush", direction = "x"), height = 400),
+               dataTableOutput("table")
+        ),
+        column(6, plotOutput("map", height = 400))
+      ),
+      theme = bs_theme(bootswatch = "minty")
+    )
+    
+    server <- function(input, output) {
+      selected <- reactiveVal(rep(TRUE, nrow(power_plants)))
+      observeEvent(input$plot_brush, {
+        selected(brushedPoints(power_plants, input$plot_brush, allRows = TRUE)$selected_)
+      })
+      
+      output$histogram <- renderPlot(overlay_histogram(power_plants, selected()))
+      output$map <- renderPlot(scatterplot(power_plants, selected()))
+      output$table <- renderDataTable(table_output(power_plants, selected()))
+    }
+    
+    shinyApp(ui, server)
+    ```
+    
+    The app makes our observations about the relationship between fuel type and
+    capacity more precise. We can also see that plant capacity follows a
+    long-tail -- one new hypotheses derived from the visualization is that
+    recent construction has focused on smaller scale, but easier to build,
+    renewables, and that future power sources might be more distributed than
+    they were in the past.
+
+c. Describe one strength and one limitation of the visualization generated in
+part (b). Consider one visual query for which it is poorly suited, and discuss
+(but do not implement) and alternative.
+
+    Example Strengths:
+    
+    * What is the (spatial) distribution of capacities? Since we can query the map according to capacity, we can easily recognize the regions that have smaller/larger capacity plants.
+    * How does capacity differ across primary fuel sources? Color plays a prominent role in this visualization, so the answer to this query stands out.
+
+    Example Weaknesses:
+    
+    * What is the capacity distribution within a specific geographic region? We can imagine an alternative that lets us modify the histogram according to a spatial selection.
+    * What are the names of the plants at specific locations in the map? We cannot query any information from the map directly. We can imagine a version that revealed a plant-level tooltip when the users mouse is placed near to a plant.
+    * When were the plants built? We can imagine using a scatterplot to query both the construction year and generation capacity of the power plants. We could update the map to highlight only the recent power plants, and then further filter to low or high capacity constructions.
+
+# Random Point Transitions
+  
+## Scoring
+
+a. Code (1 point): Concise and effectively discussed implementation using
+`.enter()` and `.append()` (1 point), correct but complex or unjustified
+implementation (0.5 points), incorrect or poorly explained implementation (0
+points).
+b. Code (1 point): Correct and concise extension of part (a) (1 point),
+technically correct but could be further refined or discussed (0.5 points), in
+correct or insufficiently discussed (0 points).
+c. Code and Design (1 point): Creative implementation that builds naturally from
+part (b) (1 point), appropriate implementation but could be refined (0.5 point),
+missing or poorly explained implementation (0 points).
+
+## Question
+This exercise will give practice implementing
+transitions on simulated data. The code below generates a random set of 10
+numbers,
+
+```{d3, eval = FALSE}
+let generator = d3.randomUniform();
+let x = d3.range(10).map(generator);
+```
+
+## Example Solution
+
+a. Encode the data in `x` using the x-coordinate positions of 10 circles.
+
+    The D3 code for this encoding must bind the data and then set the `cx`
+    attribute according to the current data value. Note that the radius and `cy`
+    attributes did not  have to be set here -- since they are constant across
+    all data elements, we put their values into the CSS file.
+    
+    ```{r, eval = FALSE}
+    let generator = d3.randomUniform();
+    let x = d3.range(10).map(generator);
+    
+    d3.select("svg")
+      .selectAll("circle")
+      .data(x).enter()
+      .append("circle")
+      .attr("cx", d => 900 * d)
+    ```
+
+    We had used the following HTML and CSS, which are similar to all the
+    examples used in class. They are just an empty SVG on a page that loads the
+    required resources.
+
+    HTML:
+    ```{r, eval = FALSE}
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
+        <link rel="stylesheet" href="q3.css">
+      </head>
+      <body>
+        <svg height=500 width=900>
+        </svg>
+      </body>
+      <script src="q3a.js"></script>
+    </html>
+    ```
+    
+    CSS:
+    ```{r, eval = FALSE}
+    circle {
+      cy: 250;
+      r: 20
+    }
+    ```
+
+b. Animate the circles. Specifically, at fixed time intervals, generate a
+new set of 10 numbers, and smoothly transition the original set of circles
+to locations corresponding to these new numbers.
+    
+    We add the following lines to the javascript in part (a). This is creating a
+    new `x` array and transitioning the points to a new `cx` based on the newly
+    bound data. We create the animation by repeatedly calling `update` using
+    `d3.interval()`.
+    
+    ```{r, eval = FALSE}
+    function update() {
+      x = d3.range(10).map(generator);
+      d3.selectAll("circle")
+        .data(x)
+        .transition()
+        .duration(1000)
+        .attrs({
+          cx: d => 900 * d,
+        })
+    }
+    
+    d3.interval(update, 1000)
+    ```
+
+c. Extend your animation so that at least one other attribute is changed at
+each time step. For example, you may consider changing the
+color or the size of the circles. Make sure that transitions remain smooth
+(e.g., if transitioning size, gradually increase or decrease the circles'
+radii).
+
+    We modify our `.attrs` function above to set random radii and colors. Note
+    that we had to remove `r` from the CSS in part (a) to ensure that it doesn't
+    overrule our D3-defined `r` attribute.
+    
+    ```{r, eval = FALSE}
+    .attrs({
+      cx: d => 900 * d,
+      r: d => 50 * generator(),
+      fill: d => `hsl(${360 * generator()},${100 * generator()}%,${20 + 80 * generator()}%)`
+    })
+    ```
+
+# Bar Chart Transitions
+
+## Scoring
+
+* Code (2 points): Clear and concise code (0.5 points), correct but
+unnecessarily complex (0.25 points), missing (0 points).
+* Completeness (2 points): Implements all required functionality (2 points),
+implements most requirements (1 point), fails to implement key functionality (0
+points).
+
+## Question
+
+This problem continues [Simple Bar Chart] above. We will create a bar chart that
+adds and removes one bar each time a button is clicked. Specifically, the
+function below takes an initial array `x` and creates a new array that removes
+the first element and adds a new one to the end. Using D3’s generate update
+pattern, write a function that updates the visualization from [Simple bar chart]
+every time that `update_data()` is called. New bars should be entered from the
+left, exited from the right, and transitioned after each click. Your solution
+should look (roughly) like [this example](https://github.com/krisrs1128/stat679_code/blob/main/activities/week5/simple_bars_example.mov?raw=true).
+
+```{d3, eval = FALSE}
+let bar_ages = [],
+generator = d3.randomUniform(0, 500),
+id = 0;
+
+function update() {
+  bar_ages = bar_ages.map(d => { return {id: d.id, age: d.age + 1, height: d.height }})
+  bar_ages.push({age: 0, height: generator(), id: id});
+  bar_ages = bar_ages.filter(d => d.age < 5)
+  id += 1;
+}
+```
+
+## Example Solution
+
+This is an exercise in using the general update pattern. On each update, we need
+to rebind the updated data array, making sure to associate each HTML tag with
+the `.id` attribute in each underlying array object. We enter and append a new
+rectangle at the left using `.attrs({ x: 0, y: 500 })`. Note that at this point,
+the rectangle has no height -- we get the nice transition effect (bar rising to
+full height) by using the update in the following block. Since the Canvas SVG
+has its origin (0, 0) at the top left corner, and since the `y` coordinate of a
+rectangle also corresponds to the top left corner, we set the `y` and `height`
+values to,
+
+```{r, eval = FALSE}
+...
+y: d => 500 - d.height,
+height: d => d.height
+...
+```
+
+This ensures that `y + height` is 500, so that the bottom of each rectangle is
+always at `y`-coordinate 500.
+
+HTML:
+```{r, eval = FALSE}
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
+  </head>
+  <body>
+    <button id="my_button" onclick="update()">Click</button>
+    <svg height=500 width=900>
+    </svg>
+  </body>
+  <script src="q4.js"></script>
+</html>
+```
+
+```{r, eval = FALSE}
+let bar_ages = [],
+generator = d3.randomUniform(0, 500),
+id = 0;
+
+function update() {
+  bar_ages = bar_ages.map(d => { return {id: d.id, age: d.age + 1, height: d.height }})
+  bar_ages.push({age: 0, height: generator(), id: id});
+  bar_ages = bar_ages.filter(d => d.age < 5)
+  id += 1;
+
+  let selection = d3.select("svg")
+    .selectAll("rect")
+    .data(bar_ages, d => d.id)
+
+  // Enter the new rectangle on the left
+  selection.enter()
+    .append("rect")
+    .attrs({ x: 0, y: 500 })
+
+  // Update all heights and locations
+  d3.select("svg")
+    .selectAll("rect")
+    .transition()
+    .duration(1000)
+    .attrs({
+      x: d => (900 / 5) * d.age,
+      y: d => 500 - d.height,
+      height: d => d.height,
+      width: 100
+    })
+
+  // Exit the old rectangle on the right
+  selection.exit()
+    .transition()
+    .duration(1000)
+    .attrs({ y: 500 height: 0})
+    .remove()
+}
+```
+
+# Transition Taxonomy
+
+## Scoring
+
+* a, (1 point): Correct and clearly explained choice of transition type (1
+point), correct choice of transition type but with less convincing justification
+(0.5 points), inappropriate choice of transition (0 points).
+* b, (1 point): Correct identification of all component SVG types (1 point),
+identification of most but not all SVG types (0.5 points), incorrect analysis of
+SVG component types (0 points).
+* c, (1 point): Complete and correct deconstruction of graphical transitions (1
+point), generally correct but underdeveloped deconstruction (0.5 points),
+incorrect or vague discussion of transitions (0 points).
+
+## Question
+
+In "Animated Transitions in Statistical Graphics," Heer and Robertson introduce
+a taxonomy of visualizations transitions. These include,
+
+  * View Transformation: We can move the "camera view" associated with a fixed
+  visualization. This includes panning and zooming, for example.
+  * Filtering: These transitions remove elements based on a user selection.
+  For example, we may smoothly remove points in a scatterplot based on a
+  dropdown menu selection.
+  * Substrate Transformation: This changes the background context on which
+  points lie. For example, we may choose to rescale the axis in a scatterplot
+  to show a larger range.
+  * Ordering: These transitions change the ordering of an ordinal variable.
+  For example, we may transition between sorting rows of a heatmap
+  alphabetically vs. by their row average.
+  * Timestep: These transitions smoothly vary one plot to the corresponding
+  plot at a different timestep. For example, we might show "slide" a time
+  series to the left to introduce data for the most recent year.
+  * Visualization Change: We may change the visual encoding used for a fixed
+  dataset. For example, we may smoothly transition from a bar chart to a pie
+  chart.
+  * Data Scheme Change: This changes the features that are displayed. For
+  example, we may smoothly turn a 1D point plot into a 2D scatterplot by
+  introducing a new variable.
+  
+In this problem, we will explore how these transitions arise in practice and
+explore how they may be implemented. 
+
+## Example Solution
+
+a. Pick any visualization from the New York Times Upshot, Washington Post
+Visual Stories, the BBC Interactives and Graphics, or the Guardian
+Interactives pages. Describe two transitions that it implements. Of the 7
+transition types given above, which is each one most similar to? Explain
+your choice.
+
+    We will analyze the interactive map and horizon plots from [_Mapping the Spread of Drought Across the U.S._](https://www.nytimes.com/interactive/2014/upshot/mapping-the-spread-of-drought-across-the-us.html). 
+Two transitions implemented in this report are,
+
+    * Map transitions: When the reader drags a slider, they are able to see changes
+in drought severity across the continental US. This exactly falls into the
+"Timestep" type of transition, because it shows the same view (the drought map)
+but with different underlying data as the sider is changed.
+    * Horizon plot details: When the user places a mouse on the horizon plot, it
+shows the exact percentage associated with that timepoint. This change is more
+ambiguous, but it could be considered a visualization change, because the
+underlying data have not changed, but the marks encoding them have.
+Specifically, the encoding had previously only included the colors and position
+on the horizon plot, but after interaction, it provides an additional bar and
+text overlay to encode the same information.
+
+b. For any transition (which may or may not be one of those you chose in
+(a)), identify the types of graphical marks used to represent the data. How
+would you create this type of mark in SVG?
+
+    For the horizon plot interaction, we could use an SVG `<rect>` to draw the bar
+representing the currently hovered timepoint. The height of this SVG would
+reflect the severity of the drought at the current timepoint. There is also an
+HTML text element that is moved on each interaction, giving the tooltip
+representing the current bar's height.
+
+c. To achieve the transition effect, how do you expect that the SVG elements
+would be modified / added / removed? Specifically, if elements are modified,
+what SVG `attrs` would be changed, and if elements are added or removed, how
+would the enter-exit-update pattern apply? You do not need to look at the
+code implementing the actual visualization, but you should give a plausible
+description of how the transition could be implemented in D3.
+
+    For the bar representing the hovered position, we would have to transition
+  both the $x$-axis location and the height of the bar. There do not need to be
+  any entrances or exits of HTML elements, since we are only ever showing one
+  bar at a time. Roughly, we would bind data on the drought severity at the
+  currently hovered year and then update the position of the bar and text that
+  give details, like in the following pseudocode,
+  
+    ```{r, eval = FALSE}
+    d3.select("#focus_bar")
+      .data(current_year)
+      .attrs({
+        height: d => scales.drought(d.drought),
+        y: d => baseline - scales.drought(d.drought),
+        x: d => scales.year(d.year)
+      })
+    ```
+    
+    assuming that the object `scales` defines two linear scales mapping drought
+    severity to bar height and selected year to $x$ position, respectively.
+    
+# Icelandic Population Analysis
+
+## Scoring
+
+* a, Discussion (1 point): Clear interpretation and takeaways (1 point), missing
+some important aspects of interpretation (0.5 points), incorrect or
+underdeveloped explanations (0 points).
+* b, Discussion (1 point): Accurate and complete explanation of the filtering
+and ID implementations, as well as their role in the transition (1.5 points),
+accurate but potentially incomplete explanations of these steps or their role
+(0.75 points), inaccurate or underdeveloped explanation (0 points).
+* c, Discussion (1 point): Correct and specific explanation of the transition
+effect (1 point), generally correct explanation but lacking important details
+(0.5 points), incorrect explanation (0 points).
+* d, Design and discussion (1 point): Creative and effective visual design
+proposal (1 point), appropriate but less well-developed deisgn proposal (0.5
+points), ineffective or vaguely communicated proposal (0 points).
+
+## Question
+
+In this problem, we will analyze the design and implementation of this [interactive visualization](https://observablehq.com/@mbostock/icelandic-population-by-age-1841-2019) of Iceland's population.
+
+
+## Example Solution
+
+a. Explain how to read this visualization. What are two potential insights a
+reader could takeaway from this visualization?
+
+    For reading the visualization, 
+      * At a fixed timepoint, the visualization describes the population age
+      distribution. It shows how much of the population is in different age ranges.
+      It also shows which age groups have a surplus of one vs. another gender.
+      * When animated, it shows how the overall population as well as the age
+      distribution has shifted over time. By changing the selected year, it allows
+      comparison of the age distribution and gender surplus between different
+      timepoints.
+      
+    Example takeaways,
+      * The age distribution has shifted towards an older population as time
+      progresses.
+      * During the 19th century, there tended to be more women than men, but this
+      has reversed in the 20th century.
+      * A rapid increase in the number of children born right after 1950 is visible.
+      There also appears to be an increase in the number of 30 - 40 year olds in the
+      2000's and 2010's, which might be a result of immigration into the country.
+  
+b. The implementation uses the following data join,
+    
+    ```{r, eval = FALSE}
+    rect = rect
+      .data(data.filter(d => d.year === year), d => `${d.sex}:${d.year - d.age}`)
+    ```
+      
+    What does this code do? What purpose does it serve within the larger visualization?
+    
+    This binds the dataset filtered to the currently selected year. It is used
+    in the general update pattern for entering, updating, and exiting bars. The
+    entered bars correspond to a newly born cohort. The updates both age each
+    cohort (shift the bars to the left) and change the number of individuals in
+    them (update the heights of the rectangles). The exits remove the cohorts
+    after they have passed age 105.
+    
+    The second part of the command above, `d => \`${d.sex}:${d.year - d.age}\`)`
+    is an ID function. It maps each rectangle to a gender and generational
+    cohort (note that `year - age` is the year of birth) combination. If it
+    didn't include this ID, then the heights of the bars would change
+    (reflecting the change in the population distribution), but we wouldn't see
+    the transitioning of one cohort from one age group to the next.
+    
+c. When the bars are entered at `Age = 0`, they seem to "pop up," rather
+than simply being appended to the end of the bar chart. How is this effect
+implemented?
+
+    When the bars are entered, their height is set to be zero. It is only during
+    the following block that the height attribute is set to the number of
+    individuals in each cohort. Since the change is implemented with an
+    intermediate transition `rect.transition().attr(...`, we are able to have a
+    smooth "pop up" effect for this first bar.
+
+d. Suppose that you had comparable population-by-age data for two countries.
+What queries would be interesting to support? How would you generalize the
+current visualization's design to support those queries?
+
+    Some example queries that we might be interested in are,
+      * At a given point in time, how to the age distributions compare to one
+      another? Which country has a larger fraction of older or younger
+      individuals?
+      * Do the age distributions shift differently between the two countries?
+      For example, if within a certain window of years, there is a rapid influx
+      of immigrants within a certain age group for country A, is there a similar
+      shift in that age group for country B?
+
+    An example design that could address these queries is to turn the current
+    visualization on its side, so that births enter from the bottom and deaths
+    exit near the top. Then, we can place bars for the two countries facing out
+    around a central axis. We could continue using the same animation, and by
+    comparing the shapes on the left and right hand sides of the display, we
+    would be able to see differences in the population age structure.

@@ -252,13 +252,63 @@ I have two ideas for dynamic queries for these temporal visualizations.
 The above interactive queries can also be combined together to have a highly responsive and information dense visualization.
 
 
-## Q4 - CalFresh Enrollment II
+# Q4. CalFresh Enrollment II
 __In this problem, we will develop an interactively linked spatial and temporal visualization of enrollment data from CalFresh, a nutritional assistance program in California. We will use D3 in this problem__
 
-### Part (a)
+## Part (a)
 __Using a line generator, create a static line plot that visualizes change in enrollment for every county in California.__
 
+<center>
+  <img style="width:50%" src="../media/PS3-CalFresh-Time-Series.png"/>
+</center>
+
+## Part (b)
+__On the same page as part (a), create a choropleth map of California, shaded in by the average enrollment for that county over the full time window of the data set.__
+
+<center>
+  <img style="width:50%" src="../media/PS3-CA-Counties-Choropleth.png"/>
+</center>
+
+## Part (c) 
+__Propose one interactive, graphical query the links the combined spatial + temporal view from (a - b). For example, you may consider highlighting time series when a county is hovered, highlighting counties when specific series are brushed, or updating choropleth colors when a subsetted time range is selected.__
 
 
+
+## Part (d)
+__Implement your proposal from part (c).__
+
+<center>
+  <video width="100%" muted autoplay loop>
+    <source src="../media/PS3-CalFresh-Enrollment-Interactive.mp4" type="video/mp4">
+  </video>
+</center>
+
+
+# Q5. Temporal and Geospatial Commands 
+__For each of the commands below, explain what role it serves in temporal or spatial data visualization. Describe a specific (if hypothetical) situation within which you could imagine using the function.__
+
+### a. `geom_stream`
+`geom_stream` is used to make stream graphs for temporal data. Stream graphs are like stacked area chart, but oriented around a central (rather than base) line. These are also almost always smoothed slightly, so that the transitions are not too jarring. I would use it in a situation where I am supposed to keep note of how deviated a behaviour is from a pre-decided mean. For example, to plot the time it takes for me to commute to class every day (mean time is 15 mins). Somedays, I might take more time, or less time. I can visualize the differences in this plot
+
+### b. `tm_lines`
+`tm_lines` is used to plot line type of vector data on a map. This is best used to plot roads of a city, or the path taken to travel from Point A to Point B on a map.
+
+### c. `rast`
+`rast()` is used to read raster type geospatial data. This type of data give a measurement along a spatial grid and the metadata says where on the earth each entry of the matrix is associated with. One example usage would be to visualize the core temperature of a grographical region at a point of time
+
+### d. `geom_horizon`
+`geom_horizon` is used to plot horizon plots for temporal data. The horizon plot gives a reasonable compromise between faceting and heat maps — it preserves some of the advantages of using y-position to encode value while having some of the compactness of heat maps. I would use horizon plots on data where I am only concerened about where the peaks lie, as that is the information this kind of plots can convey at a glance.
+
+
+# Q6. Visualization for Everyday Decisions 
+__We routinely encounter spatial and temporal data in everyday life, from the from the dates on a concert calendar to the layout of buttons in an elevator. This problem asks you to critically reflect on the way these data are represented.__
+
+__a. Describe one type of spatial or temporal data set (loosely defined) that you encounter in a nonacademic context. What visual encodings are used? Does it implement any interactivity?__
+
+I use the weather app on my phone every morning. The app shows a single-line plot of the temperature of the day every hour. It also shows a small icon next to every (hourly) point on the line to show if the sky is sunny, clear, cloudy, rainy, or snowy at the time-point. When I click on one time-point, the app shows a detailed description of the weather at the time.
+
+__b. What questions does the visualization help you answer? How easily can you arrive at an accurate answer?__
+
+I plan my outfits according to the results of this visualization everyday. If it is cold and snowing, I layer up and wear warm clothes. It is very easy to arrive at an accurate answer with this, as there is only one single line for the current day in this visualization, and only one point on the line for every hour.
 
 

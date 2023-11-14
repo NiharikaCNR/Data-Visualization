@@ -1,16 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Marck+Script&display=swap');
 
 text {
-font-family: "Marck Script";
-font-size: 20px;
+  font-family: "Marck Script";
+  font-size: 20px;
 }
+
 #name text {
-font-size: 30px;
-transform: translate(950px, 150px)
+  font-size: 30px;
+  transform: translate(950px, 150px)
 }
 
 #lines path {
-stroke: #9F2042;
-fill: none;
-opacity: 0.7
+  stroke: #9F2042;
+  fill: none;
+  opacity: 0.7
 }

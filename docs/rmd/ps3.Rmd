@@ -253,7 +253,12 @@ The above interactive queries can also be combined together to have a highly res
 
 
 # Q4. CalFresh Enrollment II
-__In this problem, we will develop an interactively linked spatial and temporal visualization of enrollment data from CalFresh, a nutritional assistance program in California. We will use D3 in this problem__
+__In this problem, we will develop an interactively linked spatial and temporal visualization of enrollment data from CalFresh, a nutritional assistance program in California. We will use D3 in this problem.__
+
+### Implementation Code: 
++ [calfresh-enrollment.html](https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/html/calfresh-enrollment.html){target="_blank"}
++ [calfresh-enrollment.js](https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/js/calfresh-enrollment.js){target="_blank"}
++ [calfresh-enrollment.css](https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/styles/calfresh-enrollment.css){target="_blank"}
 
 ## Part (a)
 __Using a line generator, create a static line plot that visualizes change in enrollment for every county in California.__
@@ -272,6 +277,7 @@ __On the same page as part (a), create a choropleth map of California, shaded in
 ## Part (c) 
 __Propose one interactive, graphical query the links the combined spatial + temporal view from (a - b). For example, you may consider highlighting time series when a county is hovered, highlighting counties when specific series are brushed, or updating choropleth colors when a subsetted time range is selected.__
 
+I want to see the time series line of only the one county when I hover over it on the map. 
 
 
 ## Part (d)

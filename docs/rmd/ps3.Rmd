@@ -252,7 +252,7 @@ The above interactive queries can also be combined together to have a highly res
 # Q4. CalFresh Enrollment II
 __In this problem, we will develop an interactively linked spatial and temporal visualization of enrollment data from CalFresh, a nutritional assistance program in California. We will use D3 in this problem.__
 
-### Implementation Code: 
+### Implementation Code (of parts a,b,d): 
 + [calfresh-enrollment.html](https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/html/calfresh-enrollment.html){target="_blank"}
 + [calfresh-enrollment.js](https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/js/calfresh-enrollment.js){target="_blank"}
 + [calfresh-enrollment.css](https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/styles/calfresh-enrollment.css){target="_blank"}
@@ -280,11 +280,14 @@ I want to see the time series line of only the one county when I hover over it o
 ## Part (d)
 __Implement your proposal from part (c).__
 
-<center>
-  <video width="100%" muted autoplay loop>
-    <source src="../media/PS3-CalFresh-Enrollment-Interactive.mp4" type="video/mp4">
-  </video>
-</center>
+### Video of implementation: [here](../media/PS3-CalFresh-Enrollment-Interactive.mp4){target="_blank"}
+<!-- <center> -->
+<!--   <video width="100%" muted autoplay loop> -->
+<!--     <source src="../media/PS3-CalFresh-Enrollment-Interactive.mp4" type="video/mp4"> -->
+<!--   </video> -->
+<!-- </center> -->
+
+<iframe src="https://niharikacnr.github.io/Data-Visualization/html/calfresh-enrollment.html" data-external="1" scrolling="no"></iframe>
 
 
 # Q5. Temporal and Geospatial Commands 

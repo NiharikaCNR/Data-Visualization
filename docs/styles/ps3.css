@@ -12,6 +12,14 @@ body {
   text-align: justify;
 }
 
+iframe {
+  transform: scale(0.9);
+  height: 520px;
+  width: 120%;
+  margin-left: -8%;
+  border-width: 0px;
+}
+
 
 
 

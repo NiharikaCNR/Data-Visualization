@@ -7,7 +7,7 @@ css: ../styles/ps2.css
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, cache = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(bslib)
 library(ceramic)
 library(ggHoriPlot)
@@ -23,9 +23,9 @@ theme_ps2 <- theme_classic() +
     text = element_text(size = 15),
     plot.title = element_text(size = 20, hjust = 0.5, face = 'bold'),
     axis.ticks = element_blank(),
-    panel.background = element_rect(fill = "#f7f7f7"),
+    plot.background = element_rect(fill = "#fcfcfc"),
+    panel.background = element_rect(fill = "#fcfcfc"),
     panel.grid.minor = element_blank(),
-    plot.background = element_rect(fill = "transparent", colour = NA),
     strip.background = element_rect(fill="transparent"),
     legend.position = 'top'
   )
@@ -52,26 +52,22 @@ In the below visualization, I have encoded the activities in the color encoding 
 ```{r america-time-use-diff-plot, fig.width=15, fig.height=15}
 activities <- read.csv("../data/activity.csv") %>% 
   group_by(activity) %>% 
-  mutate(
-    time = as.POSIXct(time, tryFormats="%Y-%m-%dT%H:%M:%SZ"), 
-    ps_percentage = prop_smooth*100
-  )
+  mutate(ps_percentage = prop_smooth*100,
+    time = as.POSIXct(time, tryFormats="%Y-%m-%dT%H:%M:%SZ"))
 
-step_val = activities$time[2] - activities$time[1]
+step_val <- activities$time[2] - activities$time[1]
 ggplot(activities, aes(x=time)) + 
   geom_step(aes(y = ps_percentage)) +
   geom_step(aes(y = 50)) +
   geom_rect(aes(xmin = time, xmax = time + step_val, ymin = 50, ymax = ps_percentage, fill = ps_percentage - 50)) +
   facet_wrap(~ reorder(activity, -prop), ncol = 1, strip.position = 'left') + 
-  labs(title = "Activities Americans did on New Year's day", 
-       x = 'Time', y = '', fill = 'Percentage of people') + 
+  labs(title = "Activities Americans did on New Year's day", x = 'Time', y = '', fill = 'Percentage of people') + 
   scale_x_datetime(expand = c(0,0)) +
-  scale_y_continuous(expand = c(0,0,0.1,0)) +
+  scale_y_continuous(expand = c(0,0)) +
   scale_fill_gradient2(
     low = "violetred3", high = "chartreuse4", limits = c(-50,50),
     breaks = seq(-50,50,10), labels = seq(0,100,10), 
-    guide = guide_colorbar(barwidth = 20, barheight = 1)
-    ) +
+    guide = guide_colorbar(barwidth = 20, barheight = 1)) +
   theme(strip.text.y.left = element_text(angle=0, hjust=1), axis.text.y = element_blank())
 ```
 
@@ -113,7 +109,7 @@ tm_shape(basemap) +
     ) +
   tm_layout(
     legend.outside = T, legend.outside.position = "right",
-    main.title = "  Power plants in the Mid-west",
+    main.title = "  Power plants in the Mid-west", outer.bg.color="#fcfcfc"
     )
 ```
 
@@ -124,20 +120,9 @@ update_map <- function(df, selected_) {
   tm_shape(basemap) +
     tm_rgb() +
     tm_shape(selected_data) + 
-    tm_dots(
-      size='capacity_mw',
-      col='primary_fuel',
-      alpha = 0.7,
-      palette="Set2",
-      title = "Fuel Type",
-      title.size = "Capacity (in MW)", 
-      legend.show = F,
-      scale=2
-    ) +
-    tm_layout(
-      legend.outside = T,
-      legend.outside.position = "left",
-    )
+    tm_dots(size='capacity_mw', col='primary_fuel', alpha = 0.7, palette="Set2",
+      title = "Fuel Type", title.size = "Capacity (in MW)", legend.show = F, scale=2) +
+    tm_layout(legend.outside = T, legend.outside.position = "left")
 }
 
 update_histogram <- function(df, selected_) {
@@ -148,11 +133,7 @@ update_histogram <- function(df, selected_) {
     scale_y_continuous(expand = c(0,0,0.1,0)) +
     scale_color_brewer(palette = "Set2", guide="none") + 
     scale_fill_brewer(palette = "Set2") + 
-    labs(
-      x = "Capacity of the Power Plant in Mega Watts",
-      y = "Number of Power Plants", 
-      fill = "Type of fuel"
-    ) + 
+    labs(y = "Number of Power Plants", fill = "Type of fuel", x = "Capacity of the Power Plant in Mega Watts") + 
     theme(legend.position = "right")
 }
 
@@ -160,8 +141,8 @@ ui <- fluidPage(
   h3("Mid-Western Power Plants"),
   fluidRow(
     column(6,
-           h4("Brush over the plot to interact with the map"),
-           plotOutput("stacked_histogram", brush = brushOpts("plot_brush", direction = "x"))
+      h4("Brush over the plot to interact with the map"),
+      plotOutput("stacked_histogram", brush = brushOpts("plot_brush", direction = "x"))
     ),
     column(6, plotOutput("map", height = 600)),
   ),
@@ -178,7 +159,7 @@ server <- function(input, output) {
   output$map <- renderPlot(update_map(plants, selected()))
 }
 
-# shinyApp(ui, server)
+shinyApp(ui, server)
 ```
 
 ### Video of Output:
@@ -392,7 +373,7 @@ move_bars()
 ## Part (a)
 __Pick any visualization from the New York Times Upshot, Washington Post Visual Stories, the BBC Interactives and Graphics, or the Guardian Interactives pages. Describe two transitions that it implements. Of the 7 transition types given above, which is each one most similar to? Explain your choice.__
 
-I picked the below projectile plot from [this](https://www.theguardian.com/us-news/ng-interactive/2017/dec/20/bussed-out-america-moves-homeless-people-country-study) Guardian article.
+I picked the below projectile plot from [this](https://www.theguardian.com/us-news/ng-interactive/2017/dec/20/bussed-out-america-moves-homeless-people-country-study){target="_blank"} Guardian article.
 
 I believe it is an example of _View Transformation_. Here, the plot first shows the people flown from NYC to foreign countries. Then, plot then zooms in and then proceeds to show the people flown from NYC to US mainland destinations. I think it is a View Transformation because we are zooming in to show a specific region of the plot.
 

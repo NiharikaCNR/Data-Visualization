@@ -31,17 +31,17 @@ Steps followed:
 2. Eliminated rows with __na__ values
 3. Removed the years that appear less than 10 times
 ```{r coffee a}
-coffee = read_csv("../data/coffee_ratings.csv")
+coffee <- read_csv("../data/coffee_ratings.csv")
 
-coffee$harvest_year = str_extract(coffee$harvest_year, "20[0-9][0-9]")
+coffee$harvest_year <- str_extract(coffee$harvest_year, "20[0-9][0-9]")
 
-coffee = coffee[complete.cases(coffee$harvest_year), ]
+coffee <- coffee[complete.cases(coffee$harvest_year), ]
 
-harvest_year_freq = coffee %>% 
+harvest_year_freq <- coffee %>% 
   group_by(harvest_year) %>%
   summarize(freq = n())
 
-coffee = coffee %>% 
+coffee <- coffee %>% 
   filter(harvest_year %in% harvest_year_freq$harvest_year[harvest_year_freq$freq>=10])
 ```
 
@@ -49,22 +49,18 @@ coffee = coffee %>%
 __Create a layered visualization of `aroma` against the `year` variable defined in (a).__
 ```{r coffee b, warning=F}
 ggplot(coffee, aes(as.factor(harvest_year), aroma, color=species, fill=species)) + 
-  geom_jitter(alpha = 0.1,) +
-  geom_boxplot(alpha = 0.3,) + 
+  geom_jitter(alpha = 0.1) +
+  geom_boxplot(alpha = 0.3) + 
   scale_y_continuous(limits = c(6, max(coffee$aroma))) + 
   scale_color_manual(values = c("salmon4", "black")) + 
   scale_fill_manual(values = c("salmon4", "black")) + 
   labs(
-    title = "Coffee Aroma every Harvest Year across species",
-    x = "Harvest Year", 
-    y = "Aroma", 
-    color = "Coffee Species", 
-    fill="Coffee Species"
-    ) + 
+    title = "Coffee Aromas across the years", x = "Year of Harvest", 
+    y = "Aroma", color = "Coffee Species", fill="Coffee Species") + 
   theme(
     plot.title = element_text(hjust = 0.5, face = "bold"),
-    axis.ticks = element_blank(), 
-    legend.position = "top")
+    axis.ticks = element_blank(), legend.position = "top"
+    )
 ```
 
 ## Part (c) 
@@ -85,27 +81,22 @@ coffee_varieties <- coffee %>%
   group_by(variety,harvest_year) %>% 
   summarize(avg_pts = mean(total_cup_points))
 
-ggplot(coffee_varieties) + 
-  geom_point(aes(as.numeric(harvest_year), avg_pts, color = reorder(variety, -avg_pts))) +
-  geom_line(aes(as.numeric(harvest_year), avg_pts, color = variety)) + 
+ggplot(coffee_varieties, aes(as.numeric(harvest_year), avg_pts, color = reorder(variety, -avg_pts))) + 
+  geom_point() + 
+  geom_line() + 
   labs(
-    title = "Coffee points of top 10 coffee varieties",
-    x = "Harvest Year", 
-    y = "Average Coffee Points", 
-    color = "Coffee Varieties"
+    title = "Coffee points of top 10 coffee varieties", 
+    x = "Year of Harvest", y = "Average Coffee Points", color = "Coffee Varieties"
   ) + 
   scale_color_brewer(palette = "Paired") +
-  theme_light() + 
-  theme(
-    legend.position = "bottom", 
-    plot.title = element_text(hjust = 0.5))
+  theme(legend.position = "bottom", plot.title = element_text(hjust = 0.5))
 ```
 
 ## Part (d)
 __Study a public analysis of the same dataset. For example, you can skim David Robinson’s [screencast](https://www.youtube.com/watch?v=-1x8Kpyndss) or Benjamin Smith’s [blog](https://bensstats.wordpress.com/2021/01/08/robservations-7-tidytuesday-analysing-coffee-ratings-data/), or you could watch one of Julia Silge’s [screencast](https://www.youtube.com/juliasilge) or read one of Danielle Navarro’s [blog posts](https://blog.djnavarro.net/) on any data analysis. You can also choose your own public data analysis. Comment on either (i) one code technique you learned from the example or (ii) the visual design strengths/weaknesses of one figure.__
 
 <center>
-<img src="../media/PS1-Q1d-CoffeeRatings.png"/>
+  <img src="../media/PS1-Q1d-CoffeeRatings.png"/>
 </center>
 
 I would like to comment on the above visualization from Benjamin Smith's blog.
@@ -126,7 +117,7 @@ __Derive new columns representing (i) the cumulative total number of points over
 ```{r ncaa-new-column}
 ncaa <- read_csv("../data/ncaa_filtered.csv")
 
-ncaa = ncaa %>% 
+ncaa <- ncaa %>% 
   mutate(hypo_team_points = 35) %>%
   group_by(school) %>% 
   mutate(cumulative_points = cumsum(points), hypo_cumulative_points = cumsum(hypo_team_points)) %>% 
@@ -144,34 +135,22 @@ ggplot(ncaa) +
   geom_line(aes(year, cumulative_points), alpha=0.7) + 
   facet_wrap(~ reorder(school,-cumulative_points),ncol=5) +
   labs(
-    title="Comparative visualization of running total points for each school over time", y="Running total points") +
-  theme_classic() + 
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'), 
-    axis.text = element_text(size = 5.5), 
-    axis.title = element_text(size=15)
-    )
+    title="Comparative visualization of running total points for each school over time", 
+    x="", y="Running total points") +
+  theme(plot.title = element_text(hjust = 0.5, size = 15, face = 'bold'), 
+    axis.text = element_text(size = 5.5), axis.title = element_text(size=15))
 ```
 
 ## Part (c)
 __Design a visualization that that compares each school’s performance with that of the hypothetical team that averages 35 points per year. Explain the strengths and weaknesses of your design and comment on a finding from your visualization.__
 ```{r ncaa c}
-ggplot(ncaa) + 
-  geom_line(
-    aes(year, cumulative_points, color=reorder(school,cumulative_points, decreasing=T)), 
-    alpha=0.6) + 
-  geom_line(aes(year, hypo_cumulative_points), linewidth=1) + 
-  labs(
-    title = "Comparative visualization of performance of each school with a hypothetical team", 
-     x = "Year", 
-     y = "Running total points", 
-     color = "Schools") + 
-  theme_classic() + 
-  theme(
-    plot.title = element_text(hjust=-0.2, size = 10, face = 'bold'), 
-    axis.title = element_text(size=10),
-    legend.title = element_text(hjust=0.5)
-    ) 
+ggplot(ncaa, aes(x=year)) + 
+  geom_line(aes(y=cumulative_points, color=reorder(school,-cumulative_points)), alpha=0.6) + 
+  geom_line(aes(y=hypo_cumulative_points), linewidth=1) + 
+  labs(title = "Comparative visualization of performance of each school with a hypothetical team", 
+     x = "Year", y = "Running total points", color = "Schools") + 
+  theme(plot.title = element_text(hjust=-0.2, size = 10, face = 'bold'), 
+    axis.title = element_text(size=10), legend.title = element_text(hjust=0.5)) 
 ```
 
 _Strengths of this visualization:_
@@ -235,10 +214,7 @@ poisson_data <- expand.grid(x=0:25, lambda=c(2,4,16)) %>%
 
 ggplot(poisson_data) + 
   geom_bar(aes(x=x, y=pmf, fill=as.factor(lambda)), stat = 'identity') + 
-  labs(
-    title = "Poisson Distribution Mass Functions by Lambda",
-    fill = expr(lambda), y="Poisson Density"
-  ) + 
+  labs(title="Poisson Distribution Mass Functions by Lambda", fill=expr(lambda), y="Poisson Density") + 
   scale_x_continuous(expand = c(0,0)) + 
   scale_y_continuous(expand = c(0,0)) + 
   scale_fill_brewer(palette = "Reds")
@@ -265,14 +241,12 @@ This was a visualization I did for an assignment in the past semester:
   <img src="../media/PS1-Q4a-RamenRatings.png"/>
 </center>
 
-<!-- ![Ramen Ratings](../media/PS1-Q4a-RamenRatings.png) -->
-
 ## Part (b) 
 __Comment on the main takeaways from the visualization and the graphical relationships that lead to that conclusion. Is this takeaway consistent with the intended message? Are there important comparisons that you would like to highlight, but which are harder to make in the current design?__
 
 _Consistent Takeaways:_
 
-1. The stacked bars are all sorted in a decreasing order, making it easy for the viewer to get an immediate idea on rating trends, i.e. Japan is highest, and Phillippines is lowest
+1. The stacked bars are all sorted in a decreasing order, making it easy for the viewer to get an immediate idea on rating trends, i.e. Japan is highest, and Philippines is lowest
 2. There is no empty spacing in the graph despite some of the countri.es not using some packaging styles for ramen. The stacked plot ensures that every country has at least one colored bar above it.
 
 _Non-highlighted comparisons:_
@@ -314,17 +288,12 @@ rr_summ <- ramen_ratings %>%
 ggplot(rr_summ) + 
   geom_bar(aes(reorder(Style,-number_of_products), number_of_products, fill=Style), stat = 'identity') + 
   facet_wrap(~ reorder(Country,-number_of_products), ncol=5) + 
-  labs(
-    title = "Ramen packaging across countries",
-    x = "Packaging style", y = "Number of ramen varieties") + 
+  labs(title = "Ramen packaging across countries", x = "Packaging style", y = "Number of ramen varieties") + 
   scale_x_discrete(expand = c(0,0)) +
   scale_y_continuous(expand = c(0,0,0.05,0)) +
   scale_fill_brewer(palette = "Reds") +
-  theme(
-    axis.ticks.x = element_blank(),
-    axis.text.x = element_blank(),
-    legend.position = "bottom", 
-    legend.title = element_blank())
+  theme(axis.ticks.x = element_blank(), axis.text.x = element_blank(),
+    legend.position = "bottom", legend.title = element_blank())
 ```
 
 
@@ -405,11 +374,13 @@ ui <- fluidPage(
   numericInput("input_num", "Enter a number:", value = 5),
   textOutput("output_text")
 )
+
 server <- function(input, output) {
   output$output_text <- renderText({
   ifelse(input$input_num > 10, "Number is greater than 10", "Number is less than or equal to 10")
-})
+    })
 }
+
 shinyApp(ui, server)
 ```
 
@@ -446,6 +417,7 @@ ui <- fluidPage(
   selectInput("plot_type", "Select plot type:", choices = c("cyl", "disp", "hp", "wt")),
   plotOutput("plot")
 )
+
 server <- function(input, output) {
   cur_data <- reactive({
     mtcars[, c("mpg", input$plot_type)]
@@ -455,6 +427,7 @@ server <- function(input, output) {
       geom_point()
   })
 }
+
 shinyApp(ui, server)
 ```
 
@@ -471,10 +444,12 @@ ui <- fluidPage(
   textOutput("output1"),
   textOutput("output2")
 )
+
 f <- function(x, y) {
   Sys.sleep(4)
   sqrt(x^2 + y^2)
 }
+
 server <- function(input, output) {
   f_xy <- reactive(f(input$x, input$y))
   output$output1 <- renderText({
@@ -484,6 +459,7 @@ server <- function(input, output) {
     paste("f(x, y) ˆ 3:", f_xy()^3)
   })
 }
+
 shinyApp(ui, server)
 ```
 

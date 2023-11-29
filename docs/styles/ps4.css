@@ -1,0 +1,21 @@
+#content {
+  max-width: 100%;
+  /*background: #efd7b8;*/
+}
+
+
+table:not(.dataTable) tr:nth-child(2n) {
+  background-color: #fcfcfc;
+}
+
+body {
+  text-align: justify;
+}
+
+iframe {
+  transform: scale(0.9);
+  height: 520px;
+  width: 120%;
+  margin-left: -8%;
+  border-width: 0px;
+}

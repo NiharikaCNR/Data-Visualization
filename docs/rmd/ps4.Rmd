@@ -1,0 +1,131 @@
+---
+title: 'STAT 679: Problem Set #4'
+author: "Niharika Chunduru"
+output: rmdformats::readthedown
+css: ../styles/ps4.css
+# date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(ggplot2)
+library(ggraph)
+library(kableExtra)
+library(tidygraph)
+library(extrafont)
+library(RColorBrewer)
+library(tidytext)
+
+
+loadfonts(device = "all", quiet = T)
+
+page_bg_color = "#fcfcfc"
+plot_font = "AppleMyungjo"
+
+theme_ps4 <- theme_classic() +
+  theme(
+    text = element_text(size = 12, family = plot_font),
+    plot.title = element_text(size = 18, face = 'bold', hjust=0.5),
+    axis.ticks = element_blank(),
+    axis.text = element_text(size=10),
+    # panel.grid.major = element_line(),
+    # panel.grid.minor = element_line(),
+    plot.background = element_rect(fill = page_bg_color),
+    panel.background = element_rect(fill = page_bg_color),
+    legend.text = element_text(size=8),
+    legend.background = element_rect(fill = NA), 
+    legend.position = 'top'
+  )
+theme_set(theme_ps4)
+```
+
+# Q1. Political Book Recommendations
+__In this problem, we’ll study a network dataset of Amazon bestselling US Politics books. Books are linked by an edge if they appeared together in the recommendations (“customers who bought this book also bought these other books”).__
+
+## Part (a)
+__The code below reads in the edges and nodes associated with the network. The edges data set only contains IDs of co-recommended books, while the nodes data includes attributes associated with each book. Build a `tbl_graph` object to store the graph.__
+
+```{r}
+edge_data_path <- "../data/political-books-edges.csv"
+node_data_path <- "../data/political-books-nodes.csv"
+edges <- read_csv(edge_data_path, col_types = "cci")
+nodes <- read_csv(node_data_path, col_types = "ccc")
+
+books_graph <- tbl_graph(nodes, edges, directed = FALSE)
+books_graph
+```
+
+## Part (b)
+__Use the result from part (a) to visualize the network as a node-link diagram. Include the books titles in the node label, and shade in the node according to political ideology.__
+
+```{r books-node-link, warning=FALSE, fig.width=10, fig.height=18}
+ggraph(books_graph, layout="kk") +
+  geom_edge_link(width=0.05) +
+  geom_node_point(aes(col=political_ideology),size=3) + 
+  geom_node_label(aes(label=label), repel = T, label.size=0.1) + 
+  labs(col="Political Ideology")
+```
+
+## Part (c)
+__Create the analogous adjacency matrix visualization. Provide examples of visual queries that are easy to answer using one encoding but not the other (i.e., what is easy to see in the node-link view vs. what is easy to see in the adjacency matrix).__
+
+```{r books-matrix, warning=FALSE, fig.width=8, fig.height=8}
+ggraph(books_graph, layout="matrix") +
+  geom_edge_tile(show.legend = F, mirror = T) +
+  geom_node_point(aes(label=label, col=political_ideology),x=-1, size=1, hjust=1) + 
+  geom_node_text(aes(label=label, col=political_ideology),y=-1, size=2, angle=90, hjust=1) + 
+  labs(col="Political Ideology")
+
+# TODO: COMPARE NODE-LINK AND MATRIX
+```
+
+
+# Q2. Topics in _Pride and Prejudice_
+__This problem uses LDA to analyze the full text of _Pride and Prejudice_. The object `paragraph` is a data.frame whose rows are paragraphs from the book. We have filtered very short paragraphs; e.g., from dialogue. We are interested in how the topics appearing in the book vary from the start to the end of the book, for example.__
+
+```{r, message=FALSE}
+paragraphs <- read_csv("../data/paragraphs.csv")
+paragraphs
+```
+
+## Part (a)
+__Create a Document-Term Matrix containing word counts from across the same paragraphs. That is, the i-th row of `dtm` should correspond to the i-th row of `paragraph`. Make sure to remove all stop-words.__
+```{r p-and-p-lda}
+by_paragraph <- paragraphs %>%
+  unite(document, paragraph)
+
+word_counts <- by_paragraph %>%
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words) %>%
+  count(document, word) %>% 
+  arrange(-n)
+
+paragraphs_dtm <- word_counts %>%
+  cast_dtm(document, word, n)
+
+paragraphs_dtm
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

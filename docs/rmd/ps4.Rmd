@@ -16,6 +16,11 @@ library(tidygraph)
 library(extrafont)
 library(RColorBrewer)
 library(tidytext)
+library(topicmodels)
+library(tidymodels)
+library(glue)
+
+set.seed(1997)
 
 
 loadfonts(device = "all", quiet = T)
@@ -91,7 +96,7 @@ paragraphs
 
 ## Part (a)
 __Create a Document-Term Matrix containing word counts from across the same paragraphs. That is, the i-th row of `dtm` should correspond to the i-th row of `paragraph`. Make sure to remove all stop-words.__
-```{r p-and-p-lda}
+```{r p-and-p-dtm}
 by_paragraph <- paragraphs %>%
   unite(document, paragraph)
 
@@ -101,20 +106,124 @@ word_counts <- by_paragraph %>%
   count(document, word) %>% 
   arrange(-n)
 
-paragraphs_dtm <- word_counts %>%
+dtm <- word_counts %>%
   cast_dtm(document, word, n)
 
-paragraphs_dtm
+dtm
+```
+
+## Part (b)
+__Fit an LDA model to `dtm` using 6 topics. Set the seed by using the argument control = list(seed=479) to remove any randomness in the result.__
+
+```{r p-and-p-lda}
+paragraphs_lda <- LDA(dtm, k = 6, control = list(seed = 479))
+
+topics <- tidy(paragraphs_lda, matrix = "beta") %>% arrange(-beta)
+memberships <- tidy(paragraphs_lda, matrix = "gamma")
+```
+
+## Part (c)
+__Visualize the top 30 words within each of the fitted topics. Specifically, create a faceted bar chart where the lengths of the bars correspond to word probabilities and the facets correspond to topics. Reorder the bars so that each topic’s top words are displayed in order of decreasing probability.__
+
+```{r p-and-p-top30, fig.height=10, fig.width=12, fig.align='center'}
+top_words <- topics %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 30) %>%
+  mutate(term = reorder_within(term, beta, topic))
+
+ggplot(top_words) + 
+  geom_col(aes(beta, term, fill=factor(topic)), show.legend = F) + 
+  facet_wrap(~ topic, scales = "free") + 
+  labs(title="Beta matrix of top 30 words in each topic", y="", x="") +
+  scale_fill_brewer(palette = "Set2") +
+  scale_y_reordered() + 
+  scale_x_continuous(expand = c(0,0))
+```
+
+## Part (d)
+__Find the paragraph that is the purest representative of Topic 2. That is, if $\gamma_{ik}$ denotes the weight of topic $k$ in paragraph $i$, then print out paragraph $i^{*}$ where $i^{*}$ = $arg max_{i}  \gamma_{i2}$. Verify that the at least a few of the words with high probability for this topic appear. Only copy the first sentence into your solution.__
+
+```{r topic-2-repr}
+topic2_members <- memberships %>% filter(topic==2)
+
+pure_topic2_doc <- (topic2_members %>% arrange(-gamma) %>% pull(document))[1]
+
+pure_topic2_para <- by_paragraph %>% filter(document == pure_topic2_doc) %>% pull(text)
+
+paste0("Topic 2 is purely represented by paragraph #",pure_topic2_doc)
+paste0(str_extract(pure_topic2_para, "^[^.!?]*[.!?]"))
 ```
 
 
+# Q3. Food nutrients 
+__This problem will use PCA to provide a low-dimensional view of a 14-dimensional nutritional facts [data set](https://uwmadison.box.com/shared/static/nmgouzobq5367aex45pnbzgkhm7sur63.csv). The data were originally curated by the USDA and are regularly used in visualization studies.__
+
+```{r load-data-set}
+nutrients <- read_csv("../data/nutrients.csv") %>% select(-id, -group_lumped)
+```
+
+## Part (a)
+__Define a `tidymodels` recipe that normalizes all nutrient features and specifies that PCA should be performed.__
+
+```{r tidymodel-recipe}
+pca_rec <- recipe(~., data = nutrients) %>%
+  update_role(name:group, new_role = "id") %>%
+  step_normalize(all_predictors()) %>%
+  step_pca(all_predictors())
+
+pca_prep <- prep(pca_rec)
+```
+
+## Part (b)
+__Visualize the top 6 principal components. What types of food do you expect to have low or high values for PC1 or PC2?__
+
+I expect _Fat sand Oils_ to have the lowest value for PC1, and _Sweets_ to have the highest value for PC2.
+
+```{r visualize-pc, fig.align='center', fig.height=6}
+components <- tidy(pca_prep, 2)
+
+ggplot(components %>% filter(component %in% glue("PC{1:6}"))) +
+  geom_col(aes(value, terms), show.legend = F) +
+  scale_fill_gradient() +
+  facet_wrap(~ component) + 
+  labs(title="Top 6 principal components of food nutrients", x="Component Value", y="")
+```
+
+## Part (c)
+__Compute the average value of PC2 within each category of the group column. Give the names of the groups sorted by this average.__
+
+```{r pc2-avg}
+sample_scores <- bake(pca_prep, NULL)
+
+PC2_groups <- sample_scores %>% 
+  group_by(group) %>% 
+  summarize(avg_PC2 = mean(PC2)) %>% 
+  arrange(-avg_PC2) %>% 
+  pull(group)
+```
+
+The groups sorted (highest -> lowest) by average values of PC2 are: 
+
+`r PC2_groups`
+
+## Part (d)
+__Visualize the scores of each food item with respect to the first two principal components. Facet the visualization according to the group column, and sort the facets according to the results of part (c). How does the result compare with your guess from part (b)?__
+
++ From the below plot, I can confirm that my guess about $Fats$ $and$ $Oils$ to have a low PC1 was accurate. 
++ $Spices$ $and$ $Herbs$ seems to have a higher value of PC2, as compared to my guess of $Sweets$.
+
+```{r visualize-pc1-pc2, fig.align='center', fig.height=10, fig.width=12}
+ggplot(sample_scores) +
+  geom_hline(yintercept = 0, size = 0.5, col = "#5d5d5d") +
+  geom_vline(xintercept = 0, size = 0.5, col = "#5d5d5d") +
+  geom_point(aes(PC1, PC2), size=0.3, alpha=0.4) +
+  facet_wrap(~ factor(group, levels = PC2_groups)) + 
+  labs(title="Score of food items w.r.t. principal components")
+```
 
 
-
-
-
-
-
+# Q4. Interactive Phylogeny 
+__We will build an interactive phylogenetic tree of $SARS-CoV-2$ genetic sequences. Each sequence has been annotated with a date and location of its discovery. We will use D3 to allow readers to explore the way genetic changes unfold over time and space. You can find the raw data here: [nodes](https://raw.githubusercontent.com/krisrs1128/stat992_f23/main/exercises/ps4/covid-nodes.csv), [edges](https://raw.githubusercontent.com/krisrs1128/stat992_f23/main/exercises/ps4/covid-edges.csv). We have provided [starter code](https://github.com/krisrs1128/stat992_f23/tree/main/exercises/ps4) to build a `d3.stratify()` object from the edge data and to define an object, `node_lookup`, which can be used to look up the country and date associated with the `from` and `to` fields in the edges.__
 
 
 

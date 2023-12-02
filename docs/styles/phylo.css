@@ -6,7 +6,7 @@ body {
 }
 
 #tree {
-  transform: translate(0px, 10px);
+  transform: translate(10px, 10px);
 }
 
 #tree path {

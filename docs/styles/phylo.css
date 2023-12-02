@@ -14,9 +14,6 @@ body {
   stroke: #0c0c0c80;
 }
 
-#tree circle {
-  opacity: 0.8
-}
 
 text {
   font-family: "Rancho";

@@ -40,8 +40,9 @@ function visualize(data) {
     .attrs({
       cx: d => d.x,
       cy: d => d.y,
-      r: d => radius(d.depth, data['nodes'][d.id-1].country),
       fill: d => d.depth==0 ? "#000" : country_colour[data['nodes'][d.id-1].country],
+      r: d => radius(d.depth, data['nodes'][d.id-1].country),
+      opacity: .8,
     })
 
   let neighborhoods = d3.Delaunay.from(tree.descendants().map(d => [d.x, d.y]))
@@ -96,23 +97,29 @@ function update_labels(ev, neighborhoods, tree, nodes) {
 
   d3.select("#tree")
     .selectAll("circle")
-    .transition().duration(100)
+    .transition(250)
+    .ease(d3.easeLinear)
     .attrs({
       r: (d, i) => {
-        let relevance = highlight(d.id, i, ix, focus),
-            country  = nodes[d.id-1].country, 
-            depth = d.depth
-        return relevance == 1 ? 3*radius(depth, country) : relevance == 0 ? 1.5*radius(depth, country) : .75*radius(depth,country)
+        let relevance = highlight(d.id, i, ix, focus), country  = nodes[d.id-1].country
+        return relevance == -1 ? .75*radius(d.depth,country) : (relevance+1)*radius(d.depth, country)
       },
+      opacity: (d, i) => {
+        let relevance = highlight(d.id, i, ix, focus)
+        return relevance == -1 ? .25 : (relevance+1)*.4
+      }
     })
 
   d3.select("#tree")
     .selectAll("path")
-    .transition().duration(100)
-    .attr("stroke-width", d => focus.indexOf(d.target.id) == -1 ? 0.2 : 1)
+    .transition(250)
+    .ease(d3.easeLinear)
+    .attr("stroke-width", d => focus.indexOf(d.target.id) == -1 ? 0.2 : 1.5)
 
   d3.select("#labels")
     .selectAll("text")
+    .transition(150)
+    .ease(d3.easeLinear)
     .text(nodes[selected_node.id-1].country=='NA' ? "" : nodes[selected_node.id-1].country)
     .attr("transform", `translate(${selected_node.x}, ${selected_node.y})`)
 }

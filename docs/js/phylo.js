@@ -43,9 +43,8 @@ function visualize(data) {
       opacity: .8,
     })
 
-  // let neighborhoods = d3.Delaunay.from(tree.descendants().map(d => [d.x, d.y]))
-  // d3.select("svg").on("mousemove", (ev) => {})
-  // d3.select("svg").on("mousemove", (ev) => update_labels(ev, neighborhoods, tree, data['nodes']))
+  let neighborhoods = d3.Delaunay.from(tree.descendants().map(d => [d.x, d.y]))
+  d3.select("svg").on("mousemove", (ev) => update_labels(ev, neighborhoods, tree, data['nodes']))
 
   // Make the legend
   let legend_data = Object.keys(country_colour).slice(1,6)

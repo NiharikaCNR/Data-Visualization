@@ -13,7 +13,8 @@ body {
 }
 
 iframe {
-  height: 100%;
+  height: 520px;
   width: 100%;
+  margin-left: 5%;
   border-width: 0px;
 }

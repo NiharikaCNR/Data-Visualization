@@ -1,6 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Waiting+for+the+Sunrise&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Rancho&display=swap');
 
+body {
+  background: #fcfcfc;
+}
+
 #tree {
   transform: translate(0px, 10px);
 }

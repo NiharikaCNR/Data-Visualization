@@ -8,7 +8,7 @@ body {
 }
 
 #tree {
-  transform: translate(10px, 10px);
+  transform: translate(10px, 20px);
 }
 
 #tree path {

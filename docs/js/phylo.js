@@ -55,7 +55,7 @@ function visualize(data) {
     .enter().append("g")
     .attrs({
       class: ".legend-item",
-      transform: (d, i) => `translate(0, ${i * 20})`,
+      transform: (d, i) => `translate(0, ${i*20})`,
     })
 
   legend_items
@@ -72,34 +72,36 @@ function visualize(data) {
     .text(d => d);
 }
 
-function focus_ids(selected_node) {
-  descendants = selected_node.descendants().map(d => d.id)
-  ancestors = selected_node.ancestors().map(d => d.id)
-  return ancestors.concat(descendants)
+function get_ids(node) {
+  descendant_ids = node.descendants().map(d => d.id)
+  ancestor_ids = node.ancestors().map(d => d.id)
+  return ancestor_ids.concat(descendant_ids)
 }
 
-function highlight(id, i, ix, focus) {
-  return i==ix ? 1 : (focus.indexOf(id) == -1) ? -1 : 0
+function get_highlight_level(curr_index, selected_index, id, focused) {
+  let highlight_level = (curr_index==selected_index ? 1 : (focused.indexOf(id) == -1) ? -1 : 0)
+  return highlight_level + 2
 }
 
 function update_labels(ev, neighborhoods, tree, nodes) {
   let pos = d3.pointer(ev),
-    ix = neighborhoods.find(pos[0], pos[1]),
-    selected_node = tree.descendants()[ix],
-    focus = focus_ids(selected_node)
+    selected_index = neighborhoods.find(pos[0], pos[1]),
+    selected_node = tree.descendants()[selected_index],
+    focused = get_ids(selected_node)
 
   d3.select("#tree")
     .selectAll("circle")
-    .transition(100)
+    .transition(50)
     .ease(d3.easeLinear)
     .attrs({
-      r: (d, i) => {
-        let relevance = highlight(d.id, i, ix, focus), country  = nodes[d.id-1].country
-        return relevance == -1 ? .75*radius(d.depth,country) : (relevance+1)*radius(d.depth, country)
+      r: (curr_node, curr_index) => {
+        let highlight_level = get_highlight_level(curr_index, selected_index, curr_node.id, focused), 
+        country  = nodes[curr_node.id-1].country
+        return (highlight_level)*radius(curr_node.depth, country)
       },
-      opacity: (d, i) => {
-        let relevance = highlight(d.id, i, ix, focus)
-        return relevance == -1 ? .25 : (relevance+1)*.4
+      opacity: (curr_node, curr_index) => {
+        let highlight_level = get_highlight_level(curr_index, selected_index, curr_node.id, focused)
+        return .3*(highlight_level)
       }
     })
 
@@ -107,7 +109,7 @@ function update_labels(ev, neighborhoods, tree, nodes) {
     .selectAll("path")
     .transition(100)
     .ease(d3.easeLinear)
-    .attr("stroke-width", d => focus.indexOf(d.target.id) == -1 ? 0.2 : 1.5)
+    .attr("stroke-width", d => focused.indexOf(d.target.id) == -1 ? 0.2 : 1.5)
 
   d3.select("#labels")
     .selectAll("text")

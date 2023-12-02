@@ -19,7 +19,7 @@ body {
 .toggle-container {
   display: flex;
   align-items: center;
-  margin: -6% 0% -5% 5%;
+  margin: -7.5% 0% 0% 5%;
 }
 
 .switch {

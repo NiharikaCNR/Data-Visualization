@@ -1,4 +1,3 @@
-
 function make_tree(data) {
   data['edges'].push({to: 1, from: null})
   stratifier = d3.stratify()
@@ -11,7 +10,6 @@ function make_tree(data) {
 }
 
 function visualize(data) {
-  data = {'nodes':data[0], 'edges':data[1]}
 
   // Assign colors to countries
   country_colour = assign_colours(data['nodes'].map(d => d.country))
@@ -45,8 +43,9 @@ function visualize(data) {
       opacity: .8,
     })
 
-  let neighborhoods = d3.Delaunay.from(tree.descendants().map(d => [d.x, d.y]))
-  d3.select("svg").on("mousemove", (ev) => update_labels(ev, neighborhoods, tree, data['nodes']))
+  // let neighborhoods = d3.Delaunay.from(tree.descendants().map(d => [d.x, d.y]))
+  // d3.select("svg").on("mousemove", (ev) => {})
+  // d3.select("svg").on("mousemove", (ev) => update_labels(ev, neighborhoods, tree, data['nodes']))
 
   // Make the legend
   let legend_data = Object.keys(country_colour).slice(1,6)
@@ -152,7 +151,22 @@ function radius(depth, country) {
   return d==0 ? 5 : d<5 ? 4 : d<10 ? 2.5 : d<15 ? 1.5 : 1
 }
 
+function toggleInteractivity(toggleSwitch) {
+  if(toggleSwitch.checked) {
+    let neighborhoods = d3.Delaunay.from(tree.descendants().map(d => [d.x, d.y]))
+    d3.select("svg").on("mousemove", (ev) => update_labels(ev, neighborhoods, tree, data['nodes']))
+  }
+  else {
+    location.reload()
+  }
+}
+
+
+var data = {}
 Promise.all([
   d3.csv("../data/covid-nodes.csv", d3.autoType),
   d3.csv("../data/covid-edges.csv", d3.autoType)
-]).then(visualize)
+]).then(([nodes, edges])=> {
+  data = {'nodes':nodes, 'edges':edges}
+  visualize(data)
+})

@@ -13,9 +13,7 @@ body {
 }
 
 iframe {
-  transform: scale(0.9);
   height: 520px;
-  width: 120%;
-  margin-left: -8%;
+  width: 100%;
   border-width: 0px;
 }

@@ -16,6 +16,17 @@ body {
   stroke: #0c0c0c80;
 }
 
+#legend circle {
+  r: 6;
+  cx: 10;
+  cy: 11;
+  filter: blur(0.5pt);
+}
+
+#legend text {
+  transform: translate(1.5rem, 1rem);
+}
+
 .toggle-container {
   display: flex;
   align-items: center;

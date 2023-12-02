@@ -42,9 +42,7 @@ function visualize(data) {
       r: d => radius(d.depth, data['nodes'][d.id-1].country),
       opacity: .8,
     })
-
-  // let neighborhoods = d3.Delaunay.from(tree.descendants().map(d => [d.x, d.y]))
-  // d3.select("svg").on("mousemove", (ev) => {})
+    
   // d3.select("svg").on("mousemove", (ev) => update_labels(ev, neighborhoods, tree, data['nodes']))
 
   // Make the legend
@@ -63,18 +61,14 @@ function visualize(data) {
   legend_items
     .append("circle")
     .attrs({
-      r: 7.5,
-      cx: 10,
-      cy: 10, 
       fill: (d, i) => Object.values(country_colour).slice(1,7)[i],
-      filter: "blur(0.75pt)",
     })
 
   legend_items
     .append("text")
-    .attr("x", 20)
-    .attr("y", 10)
-    .attr("dy", ".25em")
+    // .attr("x", 20)
+    // .attr("y", 10)
+    // .attr("dy", ".25em")
     .text(d => d);
 }
 
@@ -96,7 +90,7 @@ function update_labels(ev, neighborhoods, tree, nodes) {
 
   d3.select("#tree")
     .selectAll("circle")
-    .transition(250)
+    .transition(100)
     .ease(d3.easeLinear)
     .attrs({
       r: (d, i) => {
@@ -111,13 +105,13 @@ function update_labels(ev, neighborhoods, tree, nodes) {
 
   d3.select("#tree")
     .selectAll("path")
-    .transition(250)
+    .transition(100)
     .ease(d3.easeLinear)
     .attr("stroke-width", d => focus.indexOf(d.target.id) == -1 ? 0.2 : 1.5)
 
   d3.select("#labels")
     .selectAll("text")
-    .transition(150)
+    .transition(50)
     .ease(d3.easeLinear)
     .text(nodes[selected_node.id-1].country=='NA' ? "" : nodes[selected_node.id-1].country)
     .attr("transform", `translate(${selected_node.x}, ${selected_node.y})`)

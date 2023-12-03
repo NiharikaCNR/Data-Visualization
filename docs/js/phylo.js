@@ -1,21 +1,24 @@
-function make_tree(data) {
-  data['edges'].push({to: 1, from: null})
+var node_countries;
+
+function make_tree(edges) {
+  edges.push({to: 1, from: null})
   stratifier = d3.stratify()
     .id(d => d.to)
     .parentId(d => d.from)
   tree_gen = d3.tree()
     .size([900, 450])
-  let root = stratifier(data['edges'])
+  let root = stratifier(edges)
   return tree_gen(root)
 }
 
-function visualize(data) {
+function visualize(nodes, edges) {
+  node_countries = nodes.map(d => d.country);  
 
   // Assign colors to countries
-  country_colour = assign_colours(data['nodes'].map(d => d.country))
+  country_colour = assign_colours(node_countries)
 
   // Make the tree
-  tree = make_tree(data)
+  tree = make_tree(edges)
   
   // Generate edges/links
   let link_gen = d3.linkVertical()
@@ -38,12 +41,12 @@ function visualize(data) {
     .attrs({
       cx: d => d.x,
       cy: d => d.y,
-      fill: d => d.depth==0 ? "#000" : country_colour[data['nodes'][d.id-1].country],
-      r: d => radius(d.depth, data['nodes'][d.id-1].country),
+      fill: d => d.depth==0 ? "#000" : country_colour[nodes[d.id-1].country],
+      r: 4,
       opacity: .8,
     })
     
-  // d3.select("svg").on("mousemove", (ev) => update_labels(ev, neighborhoods, tree, data['nodes']))
+  // d3.select("svg").on("mousemove", (ev) => update_labels(ev, neighborhoods, tree, nodes))
 
   // Make the legend
   let legend_data = Object.keys(country_colour).slice(1,6)
@@ -66,9 +69,6 @@ function visualize(data) {
 
   legend_items
     .append("text")
-    // .attr("x", 20)
-    // .attr("y", 10)
-    // .attr("dy", ".25em")
     .text(d => d);
 }
 
@@ -95,9 +95,8 @@ function update_labels(ev, neighborhoods, tree, nodes) {
     .ease(d3.easeLinear)
     .attrs({
       r: (curr_node, curr_index) => {
-        let highlight_level = get_highlight_level(curr_index, selected_index, curr_node.id, focused), 
-        country  = nodes[curr_node.id-1].country
-        return (highlight_level)*radius(curr_node.depth, country)
+        let highlight_level = get_highlight_level(curr_index, selected_index, curr_node.id, focused)
+        return (highlight_level)*4
       },
       opacity: (curr_node, curr_index) => {
         let highlight_level = get_highlight_level(curr_index, selected_index, curr_node.id, focused)
@@ -115,7 +114,7 @@ function update_labels(ev, neighborhoods, tree, nodes) {
     .selectAll("text")
     .transition(50)
     .ease(d3.easeLinear)
-    .text(nodes[selected_node.id-1].country=='NA' ? "" : nodes[selected_node.id-1].country)
+    .text(node_countries[selected_node.id-1]=='NA' ? "" : node_countries[selected_node.id-1])
     .attr("transform", `translate(${selected_node.x}, ${selected_node.y})`)
 }
 
@@ -125,7 +124,7 @@ function assign_colours(all_countries_list) {
       countries_frequencyTable[country] = (countries_frequencyTable[country] || 0) + 1;
   });
   let countries = Object.keys(countries_frequencyTable).sort((a, b) => countries_frequencyTable[b] - countries_frequencyTable[a]);
-  colors = ["#000","#feda75","#fa7e1e","#d62976","#962fbf","#4f5bd5","#777"]
+  colors = ["none","#feda75","#fa7e1e","#d62976","#962fbf","#4f5bd5","#777"]
   let country_color = {}
   for (i=0; i<countries.length ; i++) {
     country_color[countries[i]] = (i<colors.length-1) ? colors[i] : colors[colors.length-1]
@@ -133,36 +132,40 @@ function assign_colours(all_countries_list) {
   return country_color
 }
 
-function radius(depth, country) {
-  return depth==0 ? 5 : country=='NA' ? 0.75 : 4
-  
-  switch (true) {
-    case d==0:  return 5
-    case d<5:   return 4
-    case d<10:  return 2.5
-    case d<15:  return 2
-    default:        return 1.5
-  }
+function reset_viz() {
+  d3.select("#tree")
+    .selectAll("path")
+    .attrs({
+      "stroke-width": 0.8
+    })
 
-  return d==0 ? 5 : d<5 ? 4 : d<10 ? 2.5 : d<15 ? 1.5 : 1
+  d3.select("#tree")
+    .selectAll("circle")
+    .attrs({
+      r: 4,
+      opacity: .8,
+    })
+
+  d3.select("#labels")
+    .selectAll("text")
+    .text("")
 }
 
 function toggleInteractivity(toggleSwitch) {
   if(toggleSwitch.checked) {
     let neighborhoods = d3.Delaunay.from(tree.descendants().map(d => [d.x, d.y]))
-    d3.select("svg").on("mousemove", (ev) => update_labels(ev, neighborhoods, tree, data['nodes']))
+    d3.select("svg").on("mousemove", (ev) => update_labels(ev, neighborhoods, tree, node_countries))
   }
   else {
-    location.reload();
+    d3.select("svg").on("mousemove",() => {})
+    reset_viz()
   }
 }
 
 
-var data = {}
 Promise.all([
   d3.csv("../data/covid-nodes.csv", d3.autoType),
   d3.csv("../data/covid-edges.csv", d3.autoType)
 ]).then(([nodes, edges])=> {
-  data = {'nodes':nodes, 'edges':edges}
-  visualize(data)
+  visualize(nodes, edges)
 })

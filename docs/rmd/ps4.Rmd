@@ -34,8 +34,6 @@ theme_ps4 <- theme_classic() +
     plot.title = element_text(size = 18, face = 'bold', hjust=0.5),
     axis.ticks = element_blank(),
     axis.text = element_text(size=10),
-    # panel.grid.major = element_line(),
-    # panel.grid.minor = element_line(),
     plot.background = element_rect(fill = page_bg_color),
     panel.background = element_rect(fill = page_bg_color),
     legend.text = element_text(size=8),
@@ -76,14 +74,14 @@ ggraph(books_graph, layout="kk") +
 __Create the analogous adjacency matrix visualization. Provide examples of visual queries that are easy to answer using one encoding but not the other (i.e., what is easy to see in the node-link view vs. what is easy to see in the adjacency matrix).__
 
 ```{r books-matrix, warning=FALSE, fig.width=8, fig.height=8}
-ggraph(books_graph, layout="matrix") +
+ggraph(books_graph, layout="matrix", sort.by=political_ideology) +
   geom_edge_tile(show.legend = F, mirror = T) +
   geom_node_point(aes(label=label, col=political_ideology),x=-1, size=1, hjust=1) + 
-  geom_node_text(aes(label=label, col=political_ideology),y=-1, size=2, angle=90, hjust=1) + 
+  geom_node_point(aes(label=label, col=political_ideology),y=-1, size=1, hjust=1) + 
   labs(col="Political Ideology")
-
-# TODO: COMPARE NODE-LINK AND MATRIX
 ```
+
+In crowded graphs, it is easy to visualize the degree of a certain nood in Adjacency matrices, as compared to node-link diagrams. On the contrary, it is easier to track paths and circuits using node-link diagrams than adjacency matrices. 
 
 
 # Q2. Topics in _Pride and Prejudice_
@@ -134,7 +132,7 @@ top_words <- topics %>%
 ggplot(top_words) + 
   geom_col(aes(beta, term, fill=factor(topic)), show.legend = F) + 
   facet_wrap(~ topic, scales = "free") + 
-  labs(title="Beta matrix of top 30 words in each topic", y="", x="") +
+  labs(title="Beta matrix of top 30 words in each topic", y="Probability of words", x="") +
   scale_fill_brewer(palette = "Set2") +
   scale_y_reordered() + 
   scale_x_continuous(expand = c(0,0))
@@ -148,10 +146,10 @@ topic2_members <- memberships %>% filter(topic==2)
 
 pure_topic2_doc <- (topic2_members %>% arrange(-gamma) %>% pull(document))[1]
 
-pure_topic2_para <- by_paragraph %>% filter(document == pure_topic2_doc) %>% pull(text)
+pure_topic2_para_text <- by_paragraph %>% filter(document == pure_topic2_doc) %>% pull(text)
 
 paste0("Topic 2 is purely represented by paragraph #",pure_topic2_doc)
-paste0(str_extract(pure_topic2_para, "^[^.!?]*[.!?]"))
+paste0(str_extract(pure_topic2_para_text, "^[^.!?]*[.!?]"))
 ```
 
 
@@ -236,15 +234,82 @@ __Create a static tree visualization that shows how the different COVID variants
 ## Part (b)
 __*Implemented Interactivity:* As the user hovers near to a node, highlight all of its ancestors. Blend the rest of the nodes into the background.__
 
-<iframe src="http://127.0.0.1:5500/docs/html/phylo.html" data-external="1" scrolling="no"></iframe>
+<iframe src="https://niharikacnr.github.io/Data-Visualization/html/phylo.html" data-external="1" scrolling="no"></iframe>
 
 ## Part (c)
 __Propose, but do not implement, an extend version of part (b) that is linked with an additional table or visualization. How would the second graphic be updated in response to user interactions? What additional queries become possible in your proposed visualization?__
 
-Extensions to my interaction would be,
++ I would add a grouped bar plot of "months vs number of variants detected" to interact with the tree . 
++ Each month would contain a group of bars, with one bar per country, which would be assigned the same colours as seen in the tree. 
++ When the user clicks on a bar, the nodes corresponding to the bar will be highlighted, and the rest will blend into the background.
 
-+ displaying the country name when a leaf node is highlighted (already implemented in current code) and , 
-+ showing the number of descendant countries when user hovers over a a non-leaf node.
+
+# Q5. Hierarchical Edge Bundling 
+__In this problem, we will study a D3 hierarchical edge bundling implementation available at [this link](https://observablehq.com/@d3/hierarchical-edge-bundling). The display shows how different files in a software package import from one another. Unlike a naive radial node-link layout, this layout “bundles” together edges if their source and target nodes have common ancestors in the package’s directory tree (which is why the resulting layout is called a “Hierarchical Edge Bundling”).__
+
+## Part (a)
+__Use `console.log()` to inspect the `root` object. Describe its structure.__
+
+The root is a JSON object made up of two items. One is the name attribute `flare`. The second item contains the children of this node. It is an array of 10 JSON objects.
+
+## Part (b)
+__What does this line do?__
+
+```{js, eval=F}
+.attr("d", ([i, o]) => line(i.path(o)))
+```
+
+This line calls a line generator `line()` to connect data items `i` and `o` by drawing a path between them
+
+__Provide one example of an edge in the original visualization (e.g., for example `xor <--> or`,though this is not a correct answer) where you believe `i.path(o)` contains more than two elements, and explain your reasoning. You may find it useful to `console.log()` the result from `i.path(o)`.__
+
+Labeler <--> Data. 
+
+Both these nodes have both outgoing and incoming edges. 
+
+
+## Part (c)
+__Imagine that you are working for a biotechnology firm that is interested in visualizing a protein network. You have data on the co-occurrence frequency for all pairs of proteins (high-co-occurrence can be interpreted as the proteins lying on a shared regulatory pathway). What, if any, additional information would you need before you could implement a hierarchical edge bundling visualization of the network? Explain your reasoning.__
+
+I might need information on the, 
+
++ relation direction of the co-occurrence (if relevant), to differentiate the frequencies based on that. 
++ order of the hierarchy to bundle the proteins in the right order (to generate parents and children)
+
+
+# Q6. Interpreting UMAP 
+__Imagine that you are a statistical consultant working with a scientist / sports team / journalist / sales division head (pick your favorite or make up your own example). At one point in your study, you found it useful to apply nonlinear dimensionality reduction with UMAP. In this problem, you are asked to provide a non-technical explanation of how to interpret the dimensionality reduction output, assuming that your audience is familiar with their data but not statistical methodology.__
+
+## Part (a)
+__You have run UMAP on the data set, which includes 50 different measurements for each row. You plot the first two dimensions as a scatter-plot. Explain to your audience what the embedding represents.__
+
+Scenario: Analyzing play techniques among players using 50 different features
+
+Analysis (Layman terms): 
+
+When I plot the first two dimensions of the UMAP, and single out any two points in the scatter plot, I will be presented with one of the following scenarios:
+
+_1. The points are close to each other_
+
+When this is the case, it means that the tow players represented by these points have similar game play tactics per the 50 recorded measurements
+
+_2. Points are far away from each other_
+
+In this case, the two players employ different game play tactics per the measurements i.e. the approach the game quite differently. If we consider the example of Basketball, one player might employ offense tactics to persorm well, while the other's strengths might lie in defense tactics.
+
+## Part (b)
+
+__Though they have not heard of UMAP, your audience has previously encountered principal components analysis for dimensionality reduction. Help your audience understand UMAP by comparing and contrasting it with PCA.__
+
+If my audience is versed in the concept of Principal Component Analysis, then I will use the following analogy to explain the UMAP. When we use PCA on the players' game play tactics, we will be able to highlight global trends and patterns in the player. Like, the player who is the best at defense, and the player who is besk at 3-pointers. if puts a spotlight on the top performers. But in the case of UMAP, it provides a "magnifying lens" to identify similarities and correlaions between the features of the players. It helps connect the skills of the players to show where they converge and diverge.
+
+
+
+
+
+
+
+
 
 
 

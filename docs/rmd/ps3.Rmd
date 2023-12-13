@@ -46,7 +46,7 @@ Sys.setenv(MAPBOX_API_KEY="pk.eyJ1Ijoia3Jpc3JzMTEyOCIsImEiOiJjbDYzdjJzczQya3JzM2
 ```
 
 # Q1. Glacial Lakes
-__The data at [this](https://github.com/NiharikaCNR/Data-Visualization/blob/main/docs/data/GL_3basins_2015.geojson) link contain labels of glacial lakes the Hindu Kush Himalaya, created during an ecological survey in 2015 by the International Centre for Integrated Mountain Development.__
+__The data at [this](https://github.com/niharika-chunduru/Data-Visualization/blob/main/docs/data/GL_3basins_2015.geojson) link contain labels of glacial lakes the Hindu Kush Himalaya, created during an ecological survey in 2015 by the International Centre for Integrated Mountain Development.__
 
 ## Part (a)
 __a.1 How many lakes are in this dataset?__
@@ -253,9 +253,9 @@ The above interactive queries can also be combined together to have a highly res
 __In this problem, we will develop an interactively linked spatial and temporal visualization of enrollment data from CalFresh, a nutritional assistance program in California. We will use D3 in this problem.__
 
 ### Implementation Code (of parts a,b,d): 
-+ [calfresh-enrollment.html](https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/html/calfresh-enrollment.html){target="_blank"}
-+ [calfresh-enrollment.js](https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/js/calfresh-enrollment.js){target="_blank"}
-+ [calfresh-enrollment.css](https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/styles/calfresh-enrollment.css){target="_blank"}
++ [calfresh-enrollment.html](https://github.com/niharika-chunduru/Data-Visualization/raw/main/docs/html/calfresh-enrollment.html){target="_blank"}
++ [calfresh-enrollment.js](https://github.com/niharika-chunduru/Data-Visualization/raw/main/docs/js/calfresh-enrollment.js){target="_blank"}
++ [calfresh-enrollment.css](https://github.com/niharika-chunduru/Data-Visualization/raw/main/docs/styles/calfresh-enrollment.css){target="_blank"}
 
 ## Part (a)
 __Using a line generator, create a static line plot that visualizes change in enrollment for every county in California.__
@@ -287,7 +287,7 @@ __Implement your proposal from part (c).__
 <!--   </video> -->
 <!-- </center> -->
 
-<iframe src="https://niharikacnr.github.io/Data-Visualization/html/calfresh-enrollment.html" data-external="1" scrolling="no"></iframe>
+<iframe src="https://niharika-chunduru.github.io/Data-Visualization/html/calfresh-enrollment.html" data-external="1" scrolling="no"></iframe>
 
 
 # Q5. Temporal and Geospatial Commands 

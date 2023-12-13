@@ -227,14 +227,14 @@ __We will build an interactive phylogenetic tree of $SARS-CoV-2$ genetic sequenc
 __Create a static tree visualization that shows how the different COVID variants evolved from one another. Use color to encode the location of the variant’s discovery. You may group rare countries into “Other,” and draw variants with unknown origins using either white or grey.__
 
 ### Code of (a) and (b):
-+ [phylo.html](https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/html/phylo.html){target="_blank"}
-+ [phylo.js](https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/js/phylo.js){target="_blank"}
-+ [phylo.css](https://github.com/NiharikaCNR/Data-Visualization/raw/main/docs/styles/phylo.css){target="_blank"}
++ [phylo.html](https://github.com/niharika-chunduru/Data-Visualization/raw/main/docs/html/phylo.html){target="_blank"}
++ [phylo.js](https://github.com/niharika-chunduru/Data-Visualization/raw/main/docs/js/phylo.js){target="_blank"}
++ [phylo.css](https://github.com/niharika-chunduru/Data-Visualization/raw/main/docs/styles/phylo.css){target="_blank"}
 
 ## Part (b)
 __*Implemented Interactivity:* As the user hovers near to a node, highlight all of its ancestors. Blend the rest of the nodes into the background.__
 
-<iframe src="https://niharikacnr.github.io/Data-Visualization/html/phylo.html" data-external="1" scrolling="no"></iframe>
+<iframe src="https://niharika-chunduru.github.io/Data-Visualization/html/phylo.html" data-external="1" scrolling="no"></iframe>
 
 ## Part (c)
 __Propose, but do not implement, an extend version of part (b) that is linked with an additional table or visualization. How would the second graphic be updated in response to user interactions? What additional queries become possible in your proposed visualization?__
